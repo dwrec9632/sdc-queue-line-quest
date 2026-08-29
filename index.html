@@ -64,7 +64,7 @@ header.mast{display:none!important}
   </div>
 </section>
 <div class="game-wrap"><main class="app"><header><small>TURN YOUR WAIT INTO AN ADVENTURE</small><h1>SDC Queue Line Quest</h1><p id="gameSubtitle">Loading your quest…</p></header>
-<section id="start" class="card"><div class="stats"><div class="stat"><b>10</b><span>Questions</span></div><div class="stat"><b>LIVE</b><span>Question Bank</span></div><div class="stat"><b>~3</b><span>Minutes</span></div></div><label>Choose your player name</label><input id="name" maxlength="18" placeholder="Example: TrailRider"><div class="name-tools"><button type="button" id="randomNameBtn" class="secondary">🎲 GIVE ME A QUEST NAME</button></div><div id="nameMsg" class="name-msg" aria-live="polite"></div><button id="startBtn" class="btn primary">START QUEST</button></section>
+<section id="start" class="card"><div class="stats"><div class="stat"><b>10</b><span>Questions</span></div><div class="stat"><b>LIVE</b><span>Question Bank</span></div><div class="stat"><b>~3</b><span>Minutes</span></div></div><label>Choose your player name</label><input id="name" maxlength="18" placeholder="Example: TrailRider"><div class="name-tools"><button type="button" id="randomNameBtn" class="secondary">🎲 GIVE ME A QUEST NAME</button></div><div id="nameMsg" class="name-msg" aria-live="polite"></div><button id="startBtn" class="btn primary" disabled>LOADING QUEST...</button></section>
 <section id="quiz" class="card hidden"><div class="top"><span id="count"></span><span id="scoreText"></span></div><div class="bar"><div id="progress" class="fill"></div></div><span id="cat" class="cat"></span><h2 id="question" class="q"></h2><div id="answers" class="answers"></div><div id="feedback" class="feedback hidden"><b id="fbtitle"></b><p id="fact"></p><button id="next" class="btn primary">NEXT QUESTION →</button></div></section>
 <section id="results" class="card results hidden"><h2 id="rank"></h2><div id="final" class="score"></div><p id="copy"></p><div id="breakdown" class="breakdown"></div>
 <div id="playerRank" class="player-rank hidden"></div>
@@ -73,7 +73,7 @@ header.mast{display:none!important}
   <div id="lbStatus" class="lb-status">Loading leaderboard…</div>
   <div id="lbRows"></div>
 </div>
-<button id="again" class="btn primary">PLAY AGAIN</button><button id="newname" class="btn secondary">CHANGE NAME</button></section><div class="footer">SDC Queue Line Quest • V20</div></main></div></div>
+<button id="again" class="btn primary">PLAY AGAIN</button><button id="newname" class="btn secondary">CHANGE NAME</button></section><div class="footer">SDC Queue Line Quest • V21</div></main></div></div>
 <script>
 let bank=[];
 const SUPABASE_URL="https://jrvegxhfwnytphdnkobp.supabase.co";
@@ -116,7 +116,7 @@ async function loadQuestions(){
   const subtitleEl=document.getElementById("gameSubtitle");
   if(subtitleEl) subtitleEl.textContent=game.subtitle||"Test your knowledge while you wait.";
   const footer=document.querySelector(".footer");
-  if(footer) footer.textContent=`SDC Queue Line Quest • ${game.name||"Trivia"} • V20`;
+  if(footer) footer.textContent=`SDC Queue Line Quest • ${game.name||"Trivia"} • V21`;
   const qResp=await fetch(`${SUPABASE_URL}/rest/v1/questions?game_id=eq.${gameId}&is_active=eq.true&select=id,question_text,choice_a,choice_b,choice_c,choice_d,correct_choice,fun_fact,category,difficulty&limit=1000`,{
     headers:{apikey:SUPABASE_KEY}
   });
@@ -156,7 +156,7 @@ function start(){
     $("quiz").classList.add("hidden");
     $("results").classList.add("hidden");
     $("name").value=cleaned;
-    $("nameMsg").textContent=cleaned.length<2 ? "Your river name needs at least 2 characters." : "That river name can't be used. Try another one!";
+    $("nameMsg").textContent=cleaned.length<2 ? "Your player name needs at least 2 characters." : "That player name can't be used. Try another one!";
     $("nameMsg").className="name-msg bad";
     $("name").focus();
     return;
@@ -272,37 +272,49 @@ $("name").addEventListener("input",()=>{
   $("nameMsg").textContent="";
   $("nameMsg").className="name-msg";
 });
+
+async function bootQuest(){
+  const btn=$("startBtn");
+  try{
+    await loadQuestions();
+    btn.disabled=false;
+    btn.textContent="START QUEST";
+    $("nameMsg").textContent="";
+    $("nameMsg").className="name-msg";
+  }catch(err){
+    console.error(err);
+    btn.disabled=true;
+    btn.textContent="QUEST UNAVAILABLE";
+    $("heroGameTitle").textContent="Quest Unavailable";
+    $("gameSubtitle").textContent="We couldn't load this trivia game.";
+    $("nameMsg").textContent="We couldn't load the trivia questions. Please refresh and try again.";
+    $("nameMsg").className="name-msg bad";
+  }
+}
+
 $("startBtn").onclick=async()=>{
   const cleaned=cleanNickname($("name").value);
   if(cleaned.length<2){
     $("name").value="";
     $("name").placeholder="Enter at least 2 characters";
-    $("nameMsg").textContent="Your river name needs at least 2 characters.";
+    $("nameMsg").textContent="Your player name needs at least 2 characters.";
     $("nameMsg").className="name-msg bad";
     $("name").focus();
     return;
   }
   if(!nicknameAllowed(cleaned)){
-    $("nameMsg").textContent="That river name can't be used. Try another one!";
+    $("nameMsg").textContent="That player name can't be used. Try another one!";
     $("nameMsg").className="name-msg bad";
     $("name").focus();
     return;
   }
   $("name").value=cleaned;
   $("nameMsg").textContent="";
-  $("startBtn").disabled=true;
-  const oldText=$("startBtn").textContent;
-  $("startBtn").textContent="LOADING QUESTIONS...";
-  try{
-    await loadQuestions();
-    start();
-  }catch(err){
-    console.error(err);
-    $("nameMsg").textContent="We couldn't load the trivia questions. Please try again.";
+  if(!bank.length){
+    $("nameMsg").textContent="The quest is still loading. Please try again in a moment.";
     $("nameMsg").className="name-msg bad";
-  }finally{
-    $("startBtn").disabled=false;
-    $("startBtn").textContent=oldText;
+    return;
   }
-};$("name").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("startBtn").click()}};$("next").onclick=next;$("again").onclick=start;$("newname").onclick=()=>{$("results").classList.add("hidden");$("start").classList.remove("hidden");$("name").value=""}
+  start();
+};$("name").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("startBtn").click()}};$("next").onclick=next;$("again").onclick=start;$("newname").onclick=()=>{$("results").classList.add("hidden");$("start").classList.remove("hidden");$("name").value=""};bootQuest();
 </script></body></html>
