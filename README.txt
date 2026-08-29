@@ -1,11 +1,17 @@
-MYSTIC RIVER TRIVIA V12 — NAME FILTER FIX
+MYSTIC RIVER TRIVIA V13 — NAME FILTER ENTER-KEY FIX
 
-Fixes:
-- Standalone "Ass" is now blocked.
-- "Ass" as a separate word in a longer nickname is blocked.
-- Avoids false positives in innocent names such as "Cassidy".
-- Existing protection against spacing, punctuation, and common number/letter substitutions remains.
-- Live leaderboard and random river-name generator remain unchanged.
+The issue was an Enter-key bypass:
+pressing Enter in the nickname box called start() directly and skipped the
+nickname filter entirely.
 
-UPLOAD:
-Replace only index.html in the GitHub repository with this V12 index.html.
+V13 routes Enter through the same validation as the ENTER THE RIVER button.
+
+Tests to try:
+- Ass -> blocked
+- asshole -> blocked
+- bitch -> blocked
+- F U C K -> blocked
+- sh1t -> blocked
+- Cassidy -> allowed
+
+Upload only index.html to GitHub.

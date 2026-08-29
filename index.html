@@ -212,5 +212,5 @@ $("startBtn").onclick=()=>{
   $("name").value=cleaned;
   $("nameMsg").textContent="";
   start();
-};$("name").onkeydown=e=>{if(e.key==="Enter")start()};$("next").onclick=next;$("again").onclick=start;$("newname").onclick=()=>{$("results").classList.add("hidden");$("start").classList.remove("hidden");$("name").value=""}
+};$("name").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("startBtn").click()}};$("next").onclick=next;$("again").onclick=start;$("newname").onclick=()=>{$("results").classList.add("hidden");$("start").classList.remove("hidden");$("name").value=""}
 </script></body></html>
