@@ -59,21 +59,21 @@ header.mast{display:none!important}
 <div style="width:100%">
 <section class="hero">
   <div class="hero-title">
-    <small>EXPLORE • DISCOVER • CHALLENGE</small>
-    <h1>Mystic River<br>Trivia</h1>
+    <small>SDC QUEUE LINE QUEST</small>
+    <h1 id="heroGameTitle">Loading Game…</h1>
   </div>
 </section>
-<div class="game-wrap"><main class="app"><header><small>EXPLORE • DISCOVER • CHALLENGE</small><h1>Mystic River<br>Trivia</h1><p>How well do you know the mysteries, rides and history of Silver Dollar City?</p></header>
-<section id="start" class="card"><div class="stats"><div class="stat"><b>10</b><span>Questions</span></div><div class="stat"><b>LIVE</b><span>Question Bank</span></div><div class="stat"><b>~3</b><span>Minutes</span></div></div><label>Choose your river name</label><input id="name" maxlength="18" placeholder="Example: RiverRider"><div class="name-tools"><button type="button" id="randomNameBtn" class="secondary">🎲 GIVE ME A RIVER NAME</button></div><div id="nameMsg" class="name-msg" aria-live="polite"></div><button id="startBtn" class="btn primary">ENTER THE RIVER</button></section>
+<div class="game-wrap"><main class="app"><header><small>TURN YOUR WAIT INTO AN ADVENTURE</small><h1>SDC Queue Line Quest</h1><p id="gameSubtitle">Loading your quest…</p></header>
+<section id="start" class="card"><div class="stats"><div class="stat"><b>10</b><span>Questions</span></div><div class="stat"><b>LIVE</b><span>Question Bank</span></div><div class="stat"><b>~3</b><span>Minutes</span></div></div><label>Choose your player name</label><input id="name" maxlength="18" placeholder="Example: TrailRider"><div class="name-tools"><button type="button" id="randomNameBtn" class="secondary">🎲 GIVE ME A QUEST NAME</button></div><div id="nameMsg" class="name-msg" aria-live="polite"></div><button id="startBtn" class="btn primary">START QUEST</button></section>
 <section id="quiz" class="card hidden"><div class="top"><span id="count"></span><span id="scoreText"></span></div><div class="bar"><div id="progress" class="fill"></div></div><span id="cat" class="cat"></span><h2 id="question" class="q"></h2><div id="answers" class="answers"></div><div id="feedback" class="feedback hidden"><b id="fbtitle"></b><p id="fact"></p><button id="next" class="btn primary">NEXT QUESTION →</button></div></section>
 <section id="results" class="card results hidden"><h2 id="rank"></h2><div id="final" class="score"></div><p id="copy"></p><div id="breakdown" class="breakdown"></div>
 <div id="playerRank" class="player-rank hidden"></div>
 <div class="leaderboard">
-  <h3>🏆 River Leaderboard</h3>
+  <h3>🏆 Quest Leaderboard</h3>
   <div id="lbStatus" class="lb-status">Loading leaderboard…</div>
   <div id="lbRows"></div>
 </div>
-<button id="again" class="btn primary">RIDE THE RIVER AGAIN</button><button id="newname" class="btn secondary">CHANGE RIVER NAME</button></section><div class="footer">SDC Queue Line Quest • Explore the river. Test your knowledge. • V18</div></main></div></div>
+<button id="again" class="btn primary">PLAY AGAIN</button><button id="newname" class="btn secondary">CHANGE NAME</button></section><div class="footer">SDC Queue Line Quest • Explore the river. Test your knowledge. • V19</div></main></div></div>
 <script>
 let bank=[];
 const SUPABASE_URL="https://jrvegxhfwnytphdnkobp.supabase.co";
@@ -111,26 +111,13 @@ async function loadQuestions(){
     heroSection.style.backgroundSize="cover";
     heroSection.style.backgroundPosition="center";
   }
-  const brandEl=document.querySelector(".brand-kicker");
-  if(!brandEl){
-    const firstHeading=document.querySelector("h1");
-    if(firstHeading){
-      const kicker=document.createElement("div");
-      kicker.className="brand-kicker";
-      kicker.textContent="SDC QUEUE LINE QUEST";
-      kicker.style.fontWeight="800";
-      kicker.style.letterSpacing=".08em";
-      kicker.style.fontSize=".85rem";
-      kicker.style.marginBottom=".35rem";
-      kicker.style.opacity=".9";
-      firstHeading.parentNode.insertBefore(kicker, firstHeading);
-    }
   }
-  const titleEl=document.querySelector("h1");
-  if(titleEl && game.name) titleEl.textContent=game.name;
-  const subtitleCandidates=[...document.querySelectorAll("p,.subtitle")];
-  const subtitleEl=subtitleCandidates.find(el=>/explore the river|test your knowledge/i.test(el.textContent||""));
-  if(subtitleEl && game.subtitle) subtitleEl.textContent=game.subtitle;
+  const heroTitle=document.getElementById("heroGameTitle");
+  if(heroTitle && game.name) heroTitle.textContent=game.name;
+  const subtitleEl=document.getElementById("gameSubtitle");
+  if(subtitleEl) subtitleEl.textContent=game.subtitle||"Test your knowledge while you wait.";
+  const footer=document.querySelector(".footer");
+  if(footer) footer.textContent=`SDC Queue Line Quest • ${game.name||"Trivia"} • V19`;
   const qResp=await fetch(`${SUPABASE_URL}/rest/v1/questions?game_id=eq.${gameId}&is_active=eq.true&select=id,question_text,choice_a,choice_b,choice_c,choice_d,correct_choice,fun_fact,category,difficulty&limit=1000`,{
     headers:{apikey:SUPABASE_KEY}
   });
