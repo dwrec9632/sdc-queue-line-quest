@@ -73,7 +73,7 @@ header.mast{display:none!important}
   <div id="lbStatus" class="lb-status">Loading leaderboard…</div>
   <div id="lbRows"></div>
 </div>
-<button id="again" class="btn primary">PLAY AGAIN</button><button id="newname" class="btn secondary">CHANGE NAME</button></section><div class="footer">SDC Queue Line Quest • Explore the river. Test your knowledge. • V19</div></main></div></div>
+<button id="again" class="btn primary">PLAY AGAIN</button><button id="newname" class="btn secondary">CHANGE NAME</button></section><div class="footer">SDC Queue Line Quest • V20</div></main></div></div>
 <script>
 let bank=[];
 const SUPABASE_URL="https://jrvegxhfwnytphdnkobp.supabase.co";
@@ -111,13 +111,12 @@ async function loadQuestions(){
     heroSection.style.backgroundSize="cover";
     heroSection.style.backgroundPosition="center";
   }
-  }
   const heroTitle=document.getElementById("heroGameTitle");
   if(heroTitle && game.name) heroTitle.textContent=game.name;
   const subtitleEl=document.getElementById("gameSubtitle");
   if(subtitleEl) subtitleEl.textContent=game.subtitle||"Test your knowledge while you wait.";
   const footer=document.querySelector(".footer");
-  if(footer) footer.textContent=`SDC Queue Line Quest • ${game.name||"Trivia"} • V19`;
+  if(footer) footer.textContent=`SDC Queue Line Quest • ${game.name||"Trivia"} • V20`;
   const qResp=await fetch(`${SUPABASE_URL}/rest/v1/questions?game_id=eq.${gameId}&is_active=eq.true&select=id,question_text,choice_a,choice_b,choice_c,choice_d,correct_choice,fun_fact,category,difficulty&limit=1000`,{
     headers:{apikey:SUPABASE_KEY}
   });
