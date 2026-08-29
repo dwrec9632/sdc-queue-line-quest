@@ -89,24 +89,41 @@ function next(){i++;i>=10?finish():render()}
 function cleanNickname(raw){
   return String(raw||"").replace(/[^a-zA-Z0-9 _-]/g,"").replace(/\s+/g," ").trim().slice(0,18);
 }
-const blockedNameTerms=[
+const blockedCompactTerms=[
   "fuck","fuk","fuc","fuq","shit","sh1t","bitch","biatch","cunt","dick","cock","pussy",
   "penis","vagina","asshole","azzhole","motherfucker","mfucker","whore","slut","porn",
-  "sex","sexy","boob","titty","titties","nigger","nigga","faggot","fag","retard",
+  "sex","sexy","boob","titty","titties","nigger","nigga","faggot","retard",
   "kike","spic","chink","wetback","rape","rapist","nazi","hitler","kkk"
 ];
+const blockedWholeWords=["ass","fag"];
 const leetMap={"0":"o","1":"i","2":"z","3":"e","4":"a","5":"s","6":"g","7":"t","8":"b","9":"g"};
-function normalizedForModeration(raw){
-  let s=String(raw||"").toLowerCase();
-  s=[...s].map(ch=>leetMap[ch]||ch).join("");
-  s=s.replace(/[^a-z]/g,"");
-  s=s.replace(/(.)\1{2,}/g,"$1$1");
-  return s;
+function normalizeLeet(raw){
+  return [...String(raw||"").toLowerCase()].map(ch=>leetMap[ch]||ch).join("");
+}
+function normalizedCompact(raw){
+  return normalizeLeet(raw).replace(/[^a-z]/g,"").replace(/(.)\1{2,}/g,"$1$1");
+}
+function normalizedWords(raw){
+  return normalizeLeet(raw)
+    .replace(/[^a-z]+/g," ")
+    .replace(/\s+/g," ")
+    .trim()
+    .split(" ")
+    .filter(Boolean);
 }
 function nicknameAllowed(raw){
-  const n=normalizedForModeration(raw);
-  if(!n) return false;
-  return !blockedNameTerms.some(term=>n.includes(normalizedForModeration(term)));
+  const compact=normalizedCompact(raw);
+  if(!compact) return false;
+
+  // Strong terms are blocked even when guests try spacing/punctuation/leet substitutions.
+  if(blockedCompactTerms.some(term=>compact.includes(normalizedCompact(term)))) return false;
+
+  // Short ambiguous terms are blocked only when they appear as a whole word.
+  // This blocks "Ass" or "Big Ass" but does not block names such as "Cassidy".
+  const words=normalizedWords(raw);
+  if(words.some(word=>blockedWholeWords.includes(word))) return false;
+
+  return true;
 }
 const riverAdjectives=["Rapid","Misty","Ozark","Wild","Splashy","Rocky","Swift","Silver","Clever","Brave","Lucky","Rustic","Mighty","Hidden","Rushing"];
 const riverNouns=["Rider","Otter","Raccoon","Explorer","Raft","Beaver","Trout","Fox","Hawk","Caver","Paddler","Adventurer","Navigator","Scout","Voyager"];

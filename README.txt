@@ -1,16 +1,11 @@
-MYSTIC RIVER TRIVIA V11 — NAME PROTECTION
+MYSTIC RIVER TRIVIA V12 — NAME FILTER FIX
 
-Adds:
-- Guest nickname profanity/inappropriate-name filter.
-- Normalization to catch many spaced/punctuated/leet-style bypass attempts.
-- Friendly rejection message without submitting the score.
-- Random "Give Me a River Name" generator.
-- Existing 2–18 character and safe-character nickname restrictions retained.
-- Live leaderboard and corrected Supabase connection retained.
-
-Important:
-No client-side profanity filter is perfect. Supabase remains the moderation backstop for deleting anything that slips through.
+Fixes:
+- Standalone "Ass" is now blocked.
+- "Ass" as a separate word in a longer nickname is blocked.
+- Avoids false positives in innocent names such as "Cassidy".
+- Existing protection against spacing, punctuation, and common number/letter substitutions remains.
+- Live leaderboard and random river-name generator remain unchanged.
 
 UPLOAD:
-Replace index.html in the GitHub repository with this V11 index.html.
-The existing mystic-river-falls.png can remain unchanged.
+Replace only index.html in the GitHub repository with this V12 index.html.
