@@ -55,7 +55,7 @@ dialog::backdrop{background:#0009}.dialog-body{padding:18px}.dialog-actions{disp
     <div id="adminMsg" class="msg"></div>
     <div id="questions"></div>
   </div>
-  <div class="footer">Trivia Admin • V1</div>
+  <div class="footer">SDC Queue Line Quest Admin • V4</div>
 </section>
 </div>
 
@@ -94,7 +94,7 @@ dialog::backdrop{background:#0009}.dialog-body{padding:18px}.dialog-actions{disp
 <div id="heroMsg" class="msg"></div>
 <label><input id="gactive" type="checkbox" style="width:auto"> Active / available to guests</label>
 <div id="gMsg" class="msg"></div>
-<div class="dialog-actions"><button id="cancelGBtn" class="secondary">CANCEL</button><button id="saveGBtn">SAVE GAME</button></div>
+<div class="dialog-actions"><button id="deleteGameBtn" type="button" class="danger">DELETE GAME</button><button id="cancelGBtn" class="secondary">CANCEL</button><button id="saveGBtn">SAVE GAME</button></div>
 </div></dialog>
 
 <script>
@@ -225,7 +225,7 @@ function openGame(g=null){
     $("gheroPreview").removeAttribute("src");
     $("gheroPreviewWrap").classList.add("hidden");
   }
-  $("gactive").checked=g?g.is_active:true;setMsg("gMsg","");$("gameDialog").showModal();
+  $("deleteGameBtn").style.display=g?"inline-block":"none";$("gactive").checked=g?g.is_active:true;setMsg("gMsg","");$("gameDialog").showModal();
 }
 async function uploadHeroPhoto(){
   const id=$("gid").value;
@@ -261,6 +261,23 @@ async function uploadHeroPhoto(){
     await loadGames();
   }catch(e){setMsg("heroMsg",e.message,"bad")}
 }
+async function deleteGame(){
+  const id=$("gid").value;
+  const name=$("gname").value.trim()||"this game";
+  if(!id){setMsg("gMsg","Save the game before deleting it.","bad");return}
+  const warning=`Permanently delete "${name}"?\n\nThis will also delete all questions and leaderboard entries for this game. This cannot be undone.`;
+  if(!confirm(warning))return;
+  const typed=prompt(`To confirm, type DELETE`);
+  if(typed!=="DELETE"){setMsg("gMsg","Delete cancelled. Type DELETE exactly to confirm.","bad");return}
+  try{
+    await api(`/rest/v1/games?id=eq.${id}`,{method:"DELETE",headers:{Prefer:"return=minimal"}});
+    $("gameDialog").close();
+    selectedGame=null;
+    await loadGames();
+    setMsg("adminMsg",`"${name}" was permanently deleted.`,"ok");
+  }catch(e){setMsg("gMsg",e.message,"bad")}
+}
+
 async function saveGame(){
   const payload={name:$("gname").value.trim(),slug:slugify($("gslug").value||$("gname").value),subtitle:$("gsubtitle").value.trim(),is_active:$("gactive").checked};
   if(!payload.name||!payload.slug){setMsg("gMsg","Name and slug are required.","bad");return}
@@ -277,7 +294,7 @@ $("gameSelect").onchange=async()=>{selectedGame=games.find(g=>String(g.id)===$("
 ["search","diffFilter","statusFilter"].forEach(id=>$(id).addEventListener("input",render));
 $("newQBtn").onclick=openNewQuestion;$("cancelQBtn").onclick=()=>$("questionDialog").close();$("saveQBtn").onclick=saveQuestion;$("deleteQBtn").onclick=deleteQuestion;
 $("uploadHeroBtn").onclick=uploadHeroPhoto;
-$("newGameBtn").onclick=()=>openGame();$("editGameBtn").onclick=()=>selectedGame&&openGame(selectedGame);$("cancelGBtn").onclick=()=>$("gameDialog").close();$("saveGBtn").onclick=saveGame;
+$("newGameBtn").onclick=()=>openGame();$("editGameBtn").onclick=()=>selectedGame&&openGame(selectedGame);$("deleteGameBtn").onclick=deleteGame;$("cancelGBtn").onclick=()=>$("gameDialog").close();$("saveGBtn").onclick=saveGame;
 $("gname").addEventListener("input",()=>{if(!$("gid").value)$("gslug").value=slugify($("gname").value)});
 
 $("ghero").addEventListener("change",()=>{
@@ -290,6 +307,6 @@ $("ghero").addEventListener("change",()=>{
 
 if(token)boot();
 </script>
-<div style="text-align:center;opacity:.55;font-size:11px;padding:8px">SDC Queue Line Quest Admin • V3</div>
+<div style="text-align:center;opacity:.55;font-size:11px;padding:8px">SDC Queue Line Quest Admin • V4</div>
 </body>
 </html>
