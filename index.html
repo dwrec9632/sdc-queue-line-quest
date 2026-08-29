@@ -73,23 +73,31 @@ header.mast{display:none!important}
   <div id="lbStatus" class="lb-status">Loading leaderboard…</div>
   <div id="lbRows"></div>
 </div>
-<button id="again" class="btn primary">RIDE THE RIVER AGAIN</button><button id="newname" class="btn secondary">CHANGE RIVER NAME</button></section><div class="footer">Mystic River Trivia • Explore the river. Test your knowledge. • V15</div></main></div></div>
+<button id="again" class="btn primary">RIDE THE RIVER AGAIN</button><button id="newname" class="btn secondary">CHANGE RIVER NAME</button></section><div class="footer">Mystic River Trivia • Explore the river. Test your knowledge. • V16</div></main></div></div>
 <script>
 let bank=[];
 const SUPABASE_URL="https://jrvegxhfwnytphdnkobp.supabase.co";
 const SUPABASE_KEY="sb_publishable_Rclep80mOH2QMXBXNHJlJQ_KrKISheH";
 
-const GAME_SLUG="mystic-river-falls";
+const params=new URLSearchParams(window.location.search);
+const GAME_SLUG=(params.get("game")||"mystic-river-falls").toLowerCase().trim();
 
 async function loadQuestions(){
-  const gameResp=await fetch(`${SUPABASE_URL}/rest/v1/games?slug=eq.${encodeURIComponent(GAME_SLUG)}&is_active=eq.true&select=id&limit=1`,{
+  const gameResp=await fetch(`${SUPABASE_URL}/rest/v1/games?slug=eq.${encodeURIComponent(GAME_SLUG)}&is_active=eq.true&select=id,slug,name,subtitle&limit=1`,{
     headers:{apikey:SUPABASE_KEY}
   });
   if(!gameResp.ok) throw new Error(`Game lookup failed (${gameResp.status})`);
   const games=await gameResp.json();
   if(!games.length) throw new Error("Game is not active or could not be found.");
 
-  const gameId=games[0].id;
+  const game=games[0];
+  const gameId=game.id;
+  document.title=game.name||"Ride Queue Trivia";
+  const titleEl=document.querySelector("h1");
+  if(titleEl && game.name) titleEl.textContent=game.name;
+  const subtitleCandidates=[...document.querySelectorAll("p,.subtitle")];
+  const subtitleEl=subtitleCandidates.find(el=>/explore the river|test your knowledge/i.test(el.textContent||""));
+  if(subtitleEl && game.subtitle) subtitleEl.textContent=game.subtitle;
   const qResp=await fetch(`${SUPABASE_URL}/rest/v1/questions?game_id=eq.${gameId}&is_active=eq.true&select=id,question_text,choice_a,choice_b,choice_c,choice_d,correct_choice,fun_fact,category,difficulty&limit=1000`,{
     headers:{apikey:SUPABASE_KEY}
   });
