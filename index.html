@@ -50,6 +50,11 @@ header.mast{display:none!important}
 .player-rank{margin:10px 0;padding:10px;border-radius:10px;background:#523821;border:1px solid #9d7346;color:#fff4dc;font-weight:800}
 
 
+
+.name-tools{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap}
+.name-tools button{width:auto;min-height:42px;padding:9px 14px;font-size:.85rem}
+.name-msg{min-height:1.2em;margin-top:7px;font-size:.78rem;font-weight:700;color:#ffd58a}
+.name-msg.bad{color:#ffb0a7}
 </style></head><body><div class="water-sheen"></div>
 <div style="width:100%">
 <section class="hero">
@@ -59,7 +64,7 @@ header.mast{display:none!important}
   </div>
 </section>
 <div class="game-wrap"><main class="app"><header><small>EXPLORE • DISCOVER • CHALLENGE</small><h1>Mystic River<br>Trivia</h1><p>How well do you know the mysteries, rides and history of Silver Dollar City?</p></header>
-<section id="start" class="card"><div class="stats"><div class="stat"><b>10</b><span>Questions</span></div><div class="stat"><b>61</b><span>Question Bank</span></div><div class="stat"><b>~3</b><span>Minutes</span></div></div><label>Choose your river name</label><input id="name" maxlength="18" placeholder="Example: RiverRider"><button id="startBtn" class="btn primary">ENTER THE RIVER</button></section>
+<section id="start" class="card"><div class="stats"><div class="stat"><b>10</b><span>Questions</span></div><div class="stat"><b>61</b><span>Question Bank</span></div><div class="stat"><b>~3</b><span>Minutes</span></div></div><label>Choose your river name</label><input id="name" maxlength="18" placeholder="Example: RiverRider"><div class="name-tools"><button type="button" id="randomNameBtn" class="secondary">🎲 GIVE ME A RIVER NAME</button></div><div id="nameMsg" class="name-msg" aria-live="polite"></div><button id="startBtn" class="btn primary">ENTER THE RIVER</button></section>
 <section id="quiz" class="card hidden"><div class="top"><span id="count"></span><span id="scoreText"></span></div><div class="bar"><div id="progress" class="fill"></div></div><span id="cat" class="cat"></span><h2 id="question" class="q"></h2><div id="answers" class="answers"></div><div id="feedback" class="feedback hidden"><b id="fbtitle"></b><p id="fact"></p><button id="next" class="btn primary">NEXT QUESTION →</button></div></section>
 <section id="results" class="card results hidden"><h2 id="rank"></h2><div id="final" class="score"></div><p id="copy"></p><div id="breakdown" class="breakdown"></div>
 <div id="playerRank" class="player-rank hidden"></div>
@@ -83,6 +88,33 @@ function choose(n,b){let q=game[i],bs=[...$("answers").children];bs.forEach(x=>x
 function next(){i++;i>=10?finish():render()}
 function cleanNickname(raw){
   return String(raw||"").replace(/[^a-zA-Z0-9 _-]/g,"").replace(/\s+/g," ").trim().slice(0,18);
+}
+const blockedNameTerms=[
+  "fuck","fuk","fuc","fuq","shit","sh1t","bitch","biatch","cunt","dick","cock","pussy",
+  "penis","vagina","asshole","azzhole","motherfucker","mfucker","whore","slut","porn",
+  "sex","sexy","boob","titty","titties","nigger","nigga","faggot","fag","retard",
+  "kike","spic","chink","wetback","rape","rapist","nazi","hitler","kkk"
+];
+const leetMap={"0":"o","1":"i","2":"z","3":"e","4":"a","5":"s","6":"g","7":"t","8":"b","9":"g"};
+function normalizedForModeration(raw){
+  let s=String(raw||"").toLowerCase();
+  s=[...s].map(ch=>leetMap[ch]||ch).join("");
+  s=s.replace(/[^a-z]/g,"");
+  s=s.replace(/(.)\1{2,}/g,"$1$1");
+  return s;
+}
+function nicknameAllowed(raw){
+  const n=normalizedForModeration(raw);
+  if(!n) return false;
+  return !blockedNameTerms.some(term=>n.includes(normalizedForModeration(term)));
+}
+const riverAdjectives=["Rapid","Misty","Ozark","Wild","Splashy","Rocky","Swift","Silver","Clever","Brave","Lucky","Rustic","Mighty","Hidden","Rushing"];
+const riverNouns=["Rider","Otter","Raccoon","Explorer","Raft","Beaver","Trout","Fox","Hawk","Caver","Paddler","Adventurer","Navigator","Scout","Voyager"];
+function makeRiverName(){
+  const a=riverAdjectives[Math.floor(Math.random()*riverAdjectives.length)];
+  const b=riverNouns[Math.floor(Math.random()*riverNouns.length)];
+  const num=Math.floor(Math.random()*90)+10;
+  return `${a}${b}${num}`.slice(0,18);
 }
 async function finish(){
   $("quiz").classList.add("hidden");$("results").classList.remove("hidden");
@@ -134,15 +166,34 @@ async function loadLeaderboard(myName,myScore,myTime){
   }).join("");
   if(!top.length)$("lbStatus").textContent="Be the first explorer on the leaderboard!";
 }
+$("randomNameBtn").onclick=()=>{
+  $("name").value=makeRiverName();
+  $("nameMsg").textContent="River name ready!";
+  $("nameMsg").className="name-msg";
+  $("name").focus();
+};
+$("name").addEventListener("input",()=>{
+  $("nameMsg").textContent="";
+  $("nameMsg").className="name-msg";
+});
 $("startBtn").onclick=()=>{
   const cleaned=cleanNickname($("name").value);
   if(cleaned.length<2){
     $("name").value="";
     $("name").placeholder="Enter at least 2 characters";
+    $("nameMsg").textContent="Your river name needs at least 2 characters.";
+    $("nameMsg").className="name-msg bad";
+    $("name").focus();
+    return;
+  }
+  if(!nicknameAllowed(cleaned)){
+    $("nameMsg").textContent="That river name can't be used. Try another one!";
+    $("nameMsg").className="name-msg bad";
     $("name").focus();
     return;
   }
   $("name").value=cleaned;
+  $("nameMsg").textContent="";
   start();
 };$("name").onkeydown=e=>{if(e.key==="Enter")start()};$("next").onclick=next;$("again").onclick=start;$("newname").onclick=()=>{$("results").classList.add("hidden");$("start").classList.remove("hidden");$("name").value=""}
 </script></body></html>
