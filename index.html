@@ -1,317 +1,322 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Trivia Admin</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SDC Queue Line Quest</title>
 <style>
-:root{--bg:#082e31;--panel:#0b3b3f;--wood:#7a4d2b;--gold:#c79555;--cream:#f6eddb;--cyan:#67d6e5;--muted:#b8c7c5;--danger:#b8564d}
-*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--cream);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-button,input,select,textarea{font:inherit}.wrap{max-width:1180px;margin:auto;padding:22px}h1,h2,h3{font-family:Georgia,serif}
-.top{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}.card{background:var(--panel);border:2px solid var(--wood);border-radius:16px;padding:18px;box-shadow:0 5px 18px #0003}
-.hidden{display:none!important}label{display:block;font-weight:700;margin:12px 0 6px}input,select,textarea{width:100%;padding:11px;border-radius:9px;border:1px solid var(--gold);background:#fff8ea;color:#222}
-textarea{min-height:86px;resize:vertical}button{border:0;border-radius:9px;padding:10px 14px;font-weight:800;cursor:pointer;background:var(--cyan);color:#05343a}
-button.secondary{background:#7e5a3b;color:white}button.danger{background:var(--danger);color:white}button.small{padding:7px 10px;font-size:.9rem}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:760px){.grid2{grid-template-columns:1fr}}
-.toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:14px 0}.toolbar>div{flex:1;min-width:170px}
-.msg{margin-top:10px;min-height:1.2em;font-weight:700;color:#ffd58a}.bad{color:#ffaaa0}.ok{color:#9ee0c7}
-.qitem{background:#0a3539;border:1px solid #8c663f;border-radius:12px;padding:13px;margin:10px 0}.qhead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
-.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#74502f;margin-right:6px;font-size:.78rem}.inactive{opacity:.55}
-.actions{display:flex;gap:7px;flex-wrap:wrap}.muted{color:var(--muted);font-size:.9rem}.stats{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}
-.stat{background:#6b482e;padding:7px 10px;border-radius:8px}dialog{width:min(760px,94vw);border:2px solid var(--wood);border-radius:16px;padding:0;background:var(--panel);color:var(--cream)}
-dialog::backdrop{background:#0009}.dialog-body{padding:18px}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap}
-.login{max-width:430px;margin:8vh auto}.footer{text-align:center;color:#9bb0ad;margin:24px 0;font-size:.8rem}
-</style>
-</head>
-<body>
-<div class="wrap">
-<section id="loginView" class="card login">
-  <h1>Trivia Admin</h1>
-  <p class="muted">Sign in with your authorized administrator account.</p>
-  <label>Email</label><input id="email" type="email" autocomplete="username">
-  <label>Password</label><input id="password" type="password" autocomplete="current-password">
-  <button id="loginBtn" style="margin-top:14px;width:100%">SIGN IN</button>
-  <div id="loginMsg" class="msg"></div>
-</section>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:system-ui;color:#f8f1df;background:#0b292d;display:flex;justify-content:center;padding:0 0 40px;position:relative}
 
-<section id="adminView" class="hidden">
-  <div class="top">
-    <div><h1 style="margin-bottom:4px">Trivia Admin Dashboard</h1><div id="who" class="muted"></div></div>
-    <div class="actions"><button id="newGameBtn" class="secondary">+ NEW GAME</button><button id="logoutBtn" class="danger">LOG OUT</button></div>
+.app{width:min(100%,580px);position:relative;z-index:1}
+header{text-align:center;padding:10px 5px 20px;text-shadow:0 3px 12px #000}
+header small{letter-spacing:.18em;color:#f0c979;font-weight:900}
+h1{font-family:Georgia,serif;font-size:clamp(2.5rem,10vw,4rem);line-height:.9;margin:10px 0;text-shadow:0 4px 16px #000}
+.card{background:linear-gradient(180deg,rgba(8,57,64,.97),rgba(5,40,47,.98));color:#fff7e9;border:4px solid #6f4a2d;border-radius:18px;padding:21px;box-shadow:0 18px 45px #0009,inset 0 0 0 2px #b7864c}.hidden{display:none!important}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}.stat{text-align:center;background:linear-gradient(#6f4b2e,#4c321f);border:1px solid #b98750;border-radius:10px;padding:10px;color:#fff4dc}.stat b{display:block;font-size:1.3rem;color:#73d6e3}.stat span{font-size:.72rem}label{display:block;font-weight:800;margin-bottom:7px}input{width:100%;padding:14px;border:2px solid #b7864c;border-radius:10px;font-size:1rem;margin-bottom:12px;background:#f9f1df;color:#17282a}.btn{width:100%;padding:14px;border:0;border-radius:10px;font-weight:900;font-size:1rem;cursor:pointer}.primary{background:linear-gradient(#14758a,#0b5263);color:white;border:1px solid #65c7d5;box-shadow:inset 0 -3px 0 #073942}.secondary{background:linear-gradient(#705035,#4e3524);color:#fff4dc;border:1px solid #b98750;margin-top:9px}.top{display:flex;justify-content:space-between;font-size:.82rem;font-weight:800;color:#f1d79f}.bar{height:8px;background:#102f35;border:1px solid #86613d;border-radius:99px;overflow:hidden;margin:10px 0 18px}.fill{height:100%;background:#39a9bb}.cat{display:inline-block;background:linear-gradient(#8a633e,#604329);color:#fff3d4;border:1px solid #c39458;padding:5px 9px;border-radius:99px;font-size:.68rem;font-weight:900;text-transform:uppercase}.q{font-family:Georgia,serif;font-size:1.5rem;line-height:1.2;text-shadow:0 2px 4px #000}.answers{display:grid;gap:9px}.answer{padding:14px;text-align:left;border:2px solid #765337;border-radius:10px;background:linear-gradient(180deg,#0c5360,#083e49);color:#fff8e8;font-weight:750;cursor:pointer;box-shadow:inset 0 0 0 1px #1f7480}.answer.correct{background:linear-gradient(#176d3c,#0d4f2b);border-color:#77d88d;box-shadow:0 0 12px #51d46a88}.answer.wrong{background:linear-gradient(#7b342e,#56231f);border-color:#dc8278}.answer:disabled{opacity:1;color:#fff8e8}.feedback{margin-top:15px;background:linear-gradient(#563a25,#3d291c);border:2px solid #9e7447;border-radius:10px;padding:14px;color:#fff4dc}.feedback p{line-height:1.4}.results{text-align:center}.score{font-size:3.5rem;font-weight:950;color:#6ed5e2;margin:10px}.breakdown{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:15px 0}.breakdown div{background:#523821;border:1px solid #9d7346;border-radius:8px;padding:9px;font-size:.75rem;font-weight:700;color:#fff4dc}.footer{text-align:center;font-size:.7rem;color:#bed2d0;margin-top:12px}
+
+.water-sheen{position:fixed;left:-10%;right:-10%;bottom:-35px;height:120px;z-index:0;opacity:.22;pointer-events:none;background:repeating-radial-gradient(ellipse at 50% 100%,rgba(112,221,236,.75) 0 2px,transparent 3px 18px);animation:riverMove 8s linear infinite}
+@keyframes riverMove{from{transform:translateX(-3%)}to{transform:translateX(3%)}}
+@media(max-width:600px){body{background-attachment:scroll;background-position:center top}.mast{min-height:245px;display:flex;flex-direction:column;justify-content:flex-start}.card{backdrop-filter:blur(2px)}}
+
+.hero{height:clamp(300px,58vh,520px);width:100%;position:relative;background:url('mystic-river-falls.png') center 42%/cover no-repeat;border-bottom:5px solid #6f4a2d;box-shadow:0 12px 30px #0008}
+.hero:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,20,22,.05),rgba(3,20,22,.05) 50%,rgba(3,20,22,.78) 100%)}
+.hero-title{position:absolute;z-index:2;left:0;right:0;bottom:20px;text-align:center;padding:0 16px;text-shadow:0 4px 12px #000}
+.hero-title small{display:block;letter-spacing:.18em;color:#f0c979;font-weight:900;font-size:.72rem}
+.hero-title h1{font-family:Georgia,serif;font-size:clamp(2.7rem,11vw,4.3rem);line-height:.88;margin:8px 0 0}
+.game-wrap{width:min(calc(100% - 24px),580px);margin:-12px auto 0;position:relative;z-index:3}
+.app{width:100%}
+header.mast{display:none!important}
+@media(max-width:600px){.hero{height:360px;background-position:center 38%}.game-wrap{margin-top:-16px}.card{border-radius:16px}}
+
+/* V5 image-quality adjustment */
+.hero{
+  height:auto!important;
+  aspect-ratio:1080/613;
+  max-height:none!important;
+  background-image:url('mystic-river-falls.png')!important;
+  background-size:100% auto!important;
+  background-position:center top!important;
+  background-repeat:no-repeat!important;
+}
+.hero-title{bottom:9%!important}
+.game-wrap{margin-top:-10px!important}
+@media(max-width:600px){
+  .hero{height:auto!important;aspect-ratio:1080/613;background-size:100% auto!important;background-position:center top!important}
+  .hero-title h1{font-size:clamp(2.25rem,10vw,3.4rem)}
+  .hero-title small{font-size:.64rem}
+  .game-wrap{margin-top:-10px!important}
+}
+
+.leaderboard{margin:18px 0 14px;text-align:left;background:#062f37;border:2px solid #8d673f;border-radius:12px;padding:12px}
+.leaderboard h3{text-align:center;margin:2px 0 10px;font-family:Georgia,serif;color:#f4d89c}
+.lb-row{display:grid;grid-template-columns:38px 1fr 55px 58px;gap:6px;align-items:center;padding:8px 5px;border-top:1px solid #31535a;font-size:.82rem}
+.lb-row:first-of-type{border-top:0}.lb-rank{font-weight:900;color:#f0c979}.lb-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lb-score{font-weight:900;text-align:right}.lb-time{text-align:right;color:#b9d4d7;font-size:.72rem}
+.lb-you{background:#0d5966;border-radius:7px}.lb-status{text-align:center;color:#c7dcda;font-size:.78rem;padding:7px}
+.player-rank{margin:10px 0;padding:10px;border-radius:10px;background:#523821;border:1px solid #9d7346;color:#fff4dc;font-weight:800}
+
+
+
+.name-tools{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap}
+.name-tools button{width:auto;min-height:42px;padding:9px 14px;font-size:.85rem}
+.name-msg{min-height:1.2em;margin-top:7px;font-size:.78rem;font-weight:700;color:#ffd58a}
+.name-msg.bad{color:#ffb0a7}
+</style></head><body><div class="water-sheen"></div>
+<div style="width:100%">
+<section class="hero">
+  <div class="hero-title">
+    <small>EXPLORE • DISCOVER • CHALLENGE</small>
+    <h1>Mystic River<br>Trivia</h1>
   </div>
-
-  <div class="card">
-    <div class="toolbar">
-      <div><label>Ride / Game</label><select id="gameSelect"></select></div>
-      <div><label>Search questions</label><input id="search" placeholder="Search question, category, answer..."></div>
-      <div><label>Difficulty</label><select id="diffFilter"><option value="">All</option><option>Easy</option><option>Medium</option><option>Hard</option></select></div>
-      <div><label>Status</label><select id="statusFilter"><option value="">All</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
-    </div>
-    <div class="top">
-      <div id="gameMeta"></div>
-      <div class="actions"><button id="editGameBtn" class="secondary">EDIT GAME</button><button id="newQBtn">+ ADD QUESTION</button></div>
-    </div>
-    <div id="stats" class="stats"></div>
-    <div id="adminMsg" class="msg"></div>
-    <div id="questions"></div>
-  </div>
-  <div class="footer">Trivia Admin • V2</div>
 </section>
+<div class="game-wrap"><main class="app"><header><small>EXPLORE • DISCOVER • CHALLENGE</small><h1>Mystic River<br>Trivia</h1><p>How well do you know the mysteries, rides and history of Silver Dollar City?</p></header>
+<section id="start" class="card"><div class="stats"><div class="stat"><b>10</b><span>Questions</span></div><div class="stat"><b>LIVE</b><span>Question Bank</span></div><div class="stat"><b>~3</b><span>Minutes</span></div></div><label>Choose your river name</label><input id="name" maxlength="18" placeholder="Example: RiverRider"><div class="name-tools"><button type="button" id="randomNameBtn" class="secondary">🎲 GIVE ME A RIVER NAME</button></div><div id="nameMsg" class="name-msg" aria-live="polite"></div><button id="startBtn" class="btn primary">ENTER THE RIVER</button></section>
+<section id="quiz" class="card hidden"><div class="top"><span id="count"></span><span id="scoreText"></span></div><div class="bar"><div id="progress" class="fill"></div></div><span id="cat" class="cat"></span><h2 id="question" class="q"></h2><div id="answers" class="answers"></div><div id="feedback" class="feedback hidden"><b id="fbtitle"></b><p id="fact"></p><button id="next" class="btn primary">NEXT QUESTION →</button></div></section>
+<section id="results" class="card results hidden"><h2 id="rank"></h2><div id="final" class="score"></div><p id="copy"></p><div id="breakdown" class="breakdown"></div>
+<div id="playerRank" class="player-rank hidden"></div>
+<div class="leaderboard">
+  <h3>🏆 River Leaderboard</h3>
+  <div id="lbStatus" class="lb-status">Loading leaderboard…</div>
+  <div id="lbRows"></div>
 </div>
-
-<dialog id="questionDialog"><div class="dialog-body">
-<h2 id="qTitle">Question</h2>
-<input id="qid" type="hidden">
-<label>Question</label><textarea id="qtext"></textarea>
-<div class="grid2">
-<div><label>Answer A</label><input id="qa"></div><div><label>Answer B</label><input id="qb"></div>
-<div><label>Answer C</label><input id="qc"></div><div><label>Answer D</label><input id="qd"></div>
-</div>
-<div class="grid2">
-<div><label>Correct answer</label><select id="qcorrect"><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
-<div><label>Difficulty</label><select id="qdifficulty"><option>Easy</option><option>Medium</option><option>Hard</option></select></div>
-</div>
-<label>Category</label><input id="qcategory" placeholder="e.g. Mystic River Falls">
-<label>Fun fact</label><textarea id="qfact"></textarea>
-<label><input id="qactive" type="checkbox" style="width:auto"> Active / available to guests</label>
-<div id="qMsg" class="msg"></div>
-<div class="dialog-actions"><button id="deleteQBtn" class="danger hidden">DELETE</button><button id="cancelQBtn" class="secondary">CANCEL</button><button id="saveQBtn">SAVE QUESTION</button></div>
-</div></dialog>
-
-<dialog id="gameDialog"><div class="dialog-body">
-<h2 id="gTitle">Game</h2>
-<input id="gid" type="hidden">
-<label>Name</label><input id="gname" placeholder="Mystic River Falls Trivia">
-<label>URL slug</label><input id="gslug" placeholder="mystic-river-falls">
-<label>Subtitle</label><input id="gsubtitle">
-<label><input id="gactive" type="checkbox" style="width:auto"> Active / available to guests</label>
-<div id="gMsg" class="msg"></div>
-<div class="dialog-actions"><button id="cancelGBtn" class="secondary">CANCEL</button><button id="saveGBtn">SAVE GAME</button></div>
-</div></dialog>
-
+<button id="again" class="btn primary">RIDE THE RIVER AGAIN</button><button id="newname" class="btn secondary">CHANGE RIVER NAME</button></section><div class="footer">SDC Queue Line Quest • Explore the river. Test your knowledge. • V18</div></main></div></div>
 <script>
+let bank=[];
 const SUPABASE_URL="https://jrvegxhfwnytphdnkobp.supabase.co";
 const SUPABASE_KEY="sb_publishable_Rclep80mOH2QMXBXNHJlJQ_KrKISheH";
-const $=id=>document.getElementById(id);
-let token=sessionStorage.getItem("triviaAdminToken")||"";
-let currentUser=null,games=[],questions=[],selectedGame=null;
 
-function headers(auth=true,extra={}){
-  const h={apikey:SUPABASE_KEY,"Content-Type":"application/json",...extra};
-  if(auth&&token) h.Authorization=`Bearer ${token}`;
-  return h;
-}
-async function api(path,opts={}){
-  const r=await fetch(SUPABASE_URL+path,{...opts,headers:headers(true,opts.headers||{})});
-  const text=await r.text(); let data=null;
-  try{data=text?JSON.parse(text):null}catch{data=text}
-  if(!r.ok) throw new Error((data&&data.message)||(data&&data.msg)||data||`Request failed (${r.status})`);
-  return data;
-}
-function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function slugify(s){return String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)}
-function setMsg(id,msg,kind=""){$(id).textContent=msg;$(id).className="msg "+kind}
+const params=new URLSearchParams(window.location.search);
+const GAME_SLUG=(params.get("game")||"mystic-river-falls").toLowerCase().trim();
+let currentGameId=null;
+let currentGameName="Ride Queue Trivia";
 
-async function login(){
-  setMsg("loginMsg","Signing in...");
-  try{
-    const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{
-      method:"POST",headers:headers(false),body:JSON.stringify({email:$("email").value.trim(),password:$("password").value})
-    });
-    const d=await r.json();
-    if(!r.ok) throw new Error(d.error_description||d.msg||"Sign in failed.");
-    token=d.access_token;sessionStorage.setItem("triviaAdminToken",token);
-    await boot();
-  }catch(e){setMsg("loginMsg",e.message,"bad")}
-}
-async function boot(){
-  try{
-    currentUser=await api("/auth/v1/user");
-    const admins=await api(`/rest/v1/admin_users?user_id=eq.${encodeURIComponent(currentUser.id)}&select=user_id`);
-    if(!admins.length) throw new Error("This account is not authorized as an administrator.");
-    $("who").textContent=currentUser.email||"Administrator";
-    $("loginView").classList.add("hidden");$("adminView").classList.remove("hidden");
-    await loadGames();
-  }catch(e){
-    sessionStorage.removeItem("triviaAdminToken");token="";
-    $("adminView").classList.add("hidden");$("loginView").classList.remove("hidden");
-    setMsg("loginMsg",e.message,"bad");
-  }
-}
-async function loadGames(){
-  games=await api("/rest/v1/games?select=id,slug,name,subtitle,hero_image_url,is_active,created_at&order=name.asc");
-  $("gameSelect").innerHTML=games.map(g=>`<option value="${g.id}">${esc(g.name)}${g.is_active?"":" (Inactive)"}</option>`).join("");
-  if(!games.length){selectedGame=null;questions=[];render();return}
-  const wanted=selectedGame&&games.find(g=>g.id===selectedGame.id);
-  selectedGame=wanted||games[0];
-  $("gameSelect").value=selectedGame.id;
-  await loadQuestions();
-}
 async function loadQuestions(){
-  if(!selectedGame)return;
-  questions=await api(`/rest/v1/questions?game_id=eq.${selectedGame.id}&select=*&order=created_at.asc&limit=1000`);
-  render();
-}
-function render(){
-  if(!selectedGame){$("gameMeta").innerHTML="<h2>No games yet</h2>";$("questions").innerHTML="";return}
-  $("gameMeta").innerHTML=`<h2 style="margin-bottom:3px">${esc(selectedGame.name)}</h2><div class="muted">/${esc(selectedGame.slug)} • ${selectedGame.is_active?"Active":"Inactive"}</div>`;
-  const active=questions.filter(q=>q.is_active).length;
-  const e=questions.filter(q=>q.is_active&&q.difficulty==="Easy").length;
-  const m=questions.filter(q=>q.is_active&&q.difficulty==="Medium").length;
-  const h=questions.filter(q=>q.is_active&&q.difficulty==="Hard").length;
-  $("stats").innerHTML=`<span class="stat">${questions.length} total</span><span class="stat">${active} active</span><span class="stat">${e} Easy</span><span class="stat">${m} Medium</span><span class="stat">${h} Hard</span>`;
-  const term=$("search").value.toLowerCase().trim(),diff=$("diffFilter").value,status=$("statusFilter").value;
-  const filtered=questions.filter(q=>{
-    const blob=[q.question_text,q.choice_a,q.choice_b,q.choice_c,q.choice_d,q.fun_fact,q.category].join(" ").toLowerCase();
-    return (!term||blob.includes(term))&&(!diff||q.difficulty===diff)&&(!status||(status==="active"?q.is_active:!q.is_active));
+  const gameResp=await fetch(`${SUPABASE_URL}/rest/v1/games?slug=eq.${encodeURIComponent(GAME_SLUG)}&is_active=eq.true&select=id,slug,name,subtitle,hero_image_url&limit=1`,{
+    headers:{apikey:SUPABASE_KEY}
   });
-  $("questions").innerHTML=filtered.length?filtered.map(q=>`
-    <div class="qitem ${q.is_active?"":"inactive"}">
-      <div class="qhead"><div><span class="badge">${esc(q.difficulty)}</span><span class="badge">${esc(q.category||"Uncategorized")}</span>${q.is_active?"":"<span class='badge'>Inactive</span>"}</div>
-      <div class="actions"><button class="small secondary" onclick="editQuestion(${q.id})">EDIT</button><button class="small" onclick="toggleQuestion(${q.id})">${q.is_active?"DEACTIVATE":"ACTIVATE"}</button></div></div>
-      <h3>${esc(q.question_text)}</h3>
-      <div class="muted">A. ${esc(q.choice_a)} &nbsp; B. ${esc(q.choice_b)} &nbsp; C. ${esc(q.choice_c)} &nbsp; D. ${esc(q.choice_d)}</div>
-      <div class="muted" style="margin-top:6px">Correct: <b>${esc(q.correct_choice)}</b>${q.fun_fact?" • "+esc(q.fun_fact):""}</div>
-    </div>`).join(""):"<p class='muted'>No questions match these filters.</p>";
-}
-function openNewQuestion(){
-  $("qTitle").textContent="Add Question";$("qid").value="";
-  ["qtext","qa","qb","qc","qd","qcategory","qfact"].forEach(id=>$(id).value="");
-  $("qcorrect").value="A";$("qdifficulty").value="Easy";$("qactive").checked=true;
-  $("deleteQBtn").classList.add("hidden");setMsg("qMsg","");$("questionDialog").showModal();
-}
-window.editQuestion=id=>{
-  const q=questions.find(x=>x.id===id);if(!q)return;
-  $("qTitle").textContent="Edit Question";$("qid").value=q.id;$("qtext").value=q.question_text;$("qa").value=q.choice_a;$("qb").value=q.choice_b;$("qc").value=q.choice_c;$("qd").value=q.choice_d;
-  $("qcorrect").value=q.correct_choice;$("qdifficulty").value=q.difficulty;$("qcategory").value=q.category||"";$("qfact").value=q.fun_fact||"";$("qactive").checked=q.is_active;
-  $("deleteQBtn").classList.remove("hidden");setMsg("qMsg","");$("questionDialog").showModal();
-}
-async function saveQuestion(){
-  const payload={game_id:selectedGame.id,question_text:$("qtext").value.trim(),choice_a:$("qa").value.trim(),choice_b:$("qb").value.trim(),choice_c:$("qc").value.trim(),choice_d:$("qd").value.trim(),correct_choice:$("qcorrect").value,fun_fact:$("qfact").value.trim(),category:$("qcategory").value.trim(),difficulty:$("qdifficulty").value,is_active:$("qactive").checked};
-  if(!payload.question_text||!payload.choice_a||!payload.choice_b||!payload.choice_c||!payload.choice_d){setMsg("qMsg","Question and all four answers are required.","bad");return}
-  try{
-    const id=$("qid").value;
-    if(id) await api(`/rest/v1/questions?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(payload),headers:{Prefer:"return=minimal"}});
-    else await api("/rest/v1/questions",{method:"POST",body:JSON.stringify(payload),headers:{Prefer:"return=minimal"}});
-    $("questionDialog").close();await loadQuestions();setMsg("adminMsg","Question saved.","ok");
-  }catch(e){setMsg("qMsg",e.message,"bad")}
-}
-window.toggleQuestion=async id=>{
-  const q=questions.find(x=>x.id===id);if(!q)return;
-  try{await api(`/rest/v1/questions?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({is_active:!q.is_active}),headers:{Prefer:"return=minimal"}});await loadQuestions()}
-  catch(e){setMsg("adminMsg",e.message,"bad")}
-}
-async function deleteQuestion(){
-  const id=$("qid").value;if(!id||!confirm("Permanently delete this question?"))return;
-  try{await api(`/rest/v1/questions?id=eq.${id}`,{method:"DELETE",headers:{Prefer:"return=minimal"}});$("questionDialog").close();await loadQuestions();setMsg("adminMsg","Question deleted.","ok")}
-  catch(e){setMsg("qMsg",e.message,"bad")}
-}
-function openGame(g=null){
-  $("gTitle").textContent=g?"Edit Game":"New Game";$("gid").value=g?.id||"";$("gname").value=g?.name||"";$("gslug").value=g?.slug||"";$("gsubtitle").value=g?.subtitle||"";$("gactive").checked=g?g.is_active:true;setMsg("gMsg","");$("gameDialog").showModal();
-}
-async function saveGame(){
-  const payload={name:$("gname").value.trim(),slug:slugify($("gslug").value||$("gname").value),subtitle:$("gsubtitle").value.trim(),is_active:$("gactive").checked};
-  if(!payload.name||!payload.slug){setMsg("gMsg","Name and slug are required.","bad");return}
-  try{
-    const id=$("gid").value;
-    if(id) await api(`/rest/v1/games?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(payload),headers:{Prefer:"return=minimal"}});
-    else await api("/rest/v1/games",{method:"POST",body:JSON.stringify(payload),headers:{Prefer:"return=minimal"}});
-    $("gameDialog").close();await loadGames();setMsg("adminMsg","Game saved.","ok");
-  }catch(e){setMsg("gMsg",e.message,"bad")}
-}
-$("loginBtn").onclick=login;$("password").onkeydown=e=>{if(e.key==="Enter")login()};
-$("logoutBtn").onclick=()=>{sessionStorage.removeItem("triviaAdminToken");location.reload()};
-$("gameSelect").onchange=async()=>{selectedGame=games.find(g=>String(g.id)===$("gameSelect").value);await loadQuestions()};
-["search","diffFilter","statusFilter"].forEach(id=>$(id).addEventListener("input",render));
-$("newQBtn").onclick=openNewQuestion;$("cancelQBtn").onclick=()=>$("questionDialog").close();$("saveQBtn").onclick=saveQuestion;$("deleteQBtn").onclick=deleteQuestion;
-$("newGameBtn").onclick=()=>openGame();$("editGameBtn").onclick=()=>selectedGame&&openGame(selectedGame);$("cancelGBtn").onclick=()=>$("gameDialog").close();$("saveGBtn").onclick=saveGame;
-$("gname").addEventListener("input",()=>{if(!$("gid").value)$("gslug").value=slugify($("gname").value)});
-if(token)boot();
+  if(!gameResp.ok) throw new Error(`Game lookup failed (${gameResp.status})`);
+  const games=await gameResp.json();
+  if(!games.length) throw new Error("Game is not active or could not be found.");
 
-async function uploadGameHero(file, gameId){
-  if(!file) return $("gameHeroUrl")?.value || null;
-  if(file.size > 5*1024*1024) throw new Error("Photo must be 5 MB or smaller.");
-  const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
-  const safeExt=["jpg","jpeg","png","webp"].includes(ext)?ext:"jpg";
-  const objectPath=`games/${gameId}-${Date.now()}.${safeExt}`;
-  const r=await fetch(`${SUPABASE_URL}/storage/v1/object/game-images/${objectPath}`,{
-    method:"POST",
-    headers:{
-      "apikey":SUPABASE_KEY,
-      "Authorization":`Bearer ${accessToken}`,
-      "Content-Type":file.type||"image/jpeg",
-      "x-upsert":"false"
-    },
-    body:file
-  });
-  if(!r.ok) throw new Error(await r.text());
-  return `${SUPABASE_URL}/storage/v1/object/public/game-images/${objectPath}`;
-}
+  const game=games[0];
+  const gameId=game.id;
+  currentGameId=gameId;
+  currentGameName=game.name||"Ride Queue Trivia";
+  document.title=`${currentGameName} | SDC Queue Line Quest`;
 
-function setHeroPreview(url){
-  const wrap=$("gameHeroPreviewWrap"), img=$("gameHeroPreview"), hidden=$("gameHeroUrl");
-  if(hidden) hidden.value=url||"";
-  if(wrap && img){
-    if(url){ img.src=url; wrap.style.display="block"; }
-    else { img.removeAttribute("src"); wrap.style.display="none"; }
+  // Apply this game's hero image from Supabase.
+  const heroUrl=game.hero_image_url||"mystic-river-falls.png";
+  const heroImg=document.querySelector('img[src*="mystic-river-falls"], .hero img, header img');
+  if(heroImg){
+    heroImg.src=heroUrl;
+    heroImg.alt=currentGameName;
   }
-}
-
-const heroFileInput=$("gameHeroFile");
-if(heroFileInput){
-  heroFileInput.addEventListener("change",()=>{
-    const f=heroFileInput.files?.[0];
-    if(!f) return;
-    setHeroPreview(URL.createObjectURL(f));
-  });
-}
-
-
-function getEditingGameId(){
-  const candidates=[
-    window.editingGameId,
-    window.currentGameId,
-    window.selectedGameId,
-    $("gameId")?.value,
-    $("editGameId")?.value
-  ];
-  for(const v of candidates){
-    const n=Number(v);
-    if(Number.isFinite(n) && n>0) return n;
+  const heroSection=document.querySelector(".hero");
+  if(heroSection && !heroImg){
+    heroSection.style.backgroundImage=`url("${heroUrl}")`;
+    heroSection.style.backgroundSize="cover";
+    heroSection.style.backgroundPosition="center";
   }
-  return null;
-}
-
-const uploadHeroBtn=$("uploadHeroBtn");
-if(uploadHeroBtn){
-  uploadHeroBtn.addEventListener("click", async ()=>{
-    try{
-      const gameId=getEditingGameId();
-      if(!gameId) throw new Error("Save the game first, then reopen it and upload the photo.");
-      const file=$("gameHeroFile")?.files?.[0];
-      if(!file) throw new Error("Choose a photo first.");
-      $("heroUploadStatus").textContent="Uploading...";
-      const url=await uploadGameHero(file, gameId);
-      const r=await fetch(`${SUPABASE_URL}/rest/v1/games?id=eq.${gameId}`,{
-        method:"PATCH",
-        headers:{
-          "apikey":SUPABASE_KEY,
-          "Authorization":`Bearer ${accessToken}`,
-          "Content-Type":"application/json",
-          "Prefer":"return=representation"
-        },
-        body:JSON.stringify({hero_image_url:url})
-      });
-      if(!r.ok) throw new Error(await r.text());
-      setHeroPreview(url);
-      $("heroUploadStatus").textContent="Photo uploaded and saved.";
-      await loadGames();
-    }catch(err){
-      $("heroUploadStatus").textContent=err.message||String(err);
+  const brandEl=document.querySelector(".brand-kicker");
+  if(!brandEl){
+    const firstHeading=document.querySelector("h1");
+    if(firstHeading){
+      const kicker=document.createElement("div");
+      kicker.className="brand-kicker";
+      kicker.textContent="SDC QUEUE LINE QUEST";
+      kicker.style.fontWeight="800";
+      kicker.style.letterSpacing=".08em";
+      kicker.style.fontSize=".85rem";
+      kicker.style.marginBottom=".35rem";
+      kicker.style.opacity=".9";
+      firstHeading.parentNode.insertBefore(kicker, firstHeading);
     }
+  }
+  const titleEl=document.querySelector("h1");
+  if(titleEl && game.name) titleEl.textContent=game.name;
+  const subtitleCandidates=[...document.querySelectorAll("p,.subtitle")];
+  const subtitleEl=subtitleCandidates.find(el=>/explore the river|test your knowledge/i.test(el.textContent||""));
+  if(subtitleEl && game.subtitle) subtitleEl.textContent=game.subtitle;
+  const qResp=await fetch(`${SUPABASE_URL}/rest/v1/questions?game_id=eq.${gameId}&is_active=eq.true&select=id,question_text,choice_a,choice_b,choice_c,choice_d,correct_choice,fun_fact,category,difficulty&limit=1000`,{
+    headers:{apikey:SUPABASE_KEY}
   });
-}
+  if(!qResp.ok) throw new Error(`Question load failed (${qResp.status})`);
+  const rows=await qResp.json();
 
-</script>
-</body>
-</html>
+  const letterIndex={A:0,B:1,C:2,D:3};
+  bank=rows.map(q=>({
+    id:q.id,
+    question:q.question_text,
+    answers:[q.choice_a,q.choice_b,q.choice_c,q.choice_d],
+    correct:letterIndex[q.correct_choice],
+    fact:q.fun_fact||"",
+    category:q.category||"General",
+    difficulty:String(q.difficulty||"Easy").toLowerCase()
+  }));
+
+  const counts={
+    easy:bank.filter(q=>q.difficulty==="easy").length,
+    medium:bank.filter(q=>q.difficulty==="medium").length,
+    hard:bank.filter(q=>q.difficulty==="hard").length
+  };
+
+  if(bank.length<10 || counts.easy<4 || counts.medium<4 || counts.hard<2){
+    throw new Error(`Not enough active questions. Need at least 4 Easy, 4 Medium, and 2 Hard.`);
+  }
+}
+let game=[],i=0,score=0,player="",cats={},startedAt=0;
+const $=x=>document.getElementById(x);
+function shuffle(a){let x=[...a];for(let n=x.length-1;n>0;n--){let j=Math.floor(Math.random()*(n+1));[x[n],x[j]]=[x[j],x[n]]}return x}
+function makeGame(){let out=[];for(const [d,n] of [["easy",4],["medium",4],["hard",2]])out.push(...shuffle(bank.filter(q=>q.difficulty===d)).slice(0,n));return shuffle(out)}
+function start(){
+  const requested=$("name").value.trim()||player||"";
+  const cleaned=cleanNickname(requested);
+  if(cleaned.length<2 || !nicknameAllowed(cleaned)){
+    $("start").classList.remove("hidden");
+    $("quiz").classList.add("hidden");
+    $("results").classList.add("hidden");
+    $("name").value=cleaned;
+    $("nameMsg").textContent=cleaned.length<2 ? "Your river name needs at least 2 characters." : "That river name can't be used. Try another one!";
+    $("nameMsg").className="name-msg bad";
+    $("name").focus();
+    return;
+  }
+  player=cleaned;game=makeGame();i=0;score=0;cats={};startedAt=Date.now();$("start").classList.add("hidden");$("results").classList.add("hidden");$("quiz").classList.remove("hidden");render()}
+function render(){let q=game[i];$("feedback").classList.add("hidden");$("count").textContent=`Question ${i+1} of 10`;$("scoreText").textContent=`Score: ${score}`;$("progress").style.width=`${i*10}%`;$("cat").textContent=q.category;$("question").textContent=q.question;$("answers").innerHTML="";q.answers.forEach((a,n)=>{let b=document.createElement("button");b.className="answer";b.textContent=a;b.onclick=()=>choose(n,b);$("answers").appendChild(b)})}
+function choose(n,b){let q=game[i],bs=[...$("answers").children];bs.forEach(x=>x.disabled=true);if(!cats[q.category])cats[q.category]=[0,0];cats[q.category][1]++;if(n===q.correct){score++;cats[q.category][0]++;b.classList.add("correct");$("fbtitle").textContent="✓ Correct!"}else{b.classList.add("wrong");bs[q.correct].classList.add("correct");$("fbtitle").textContent="Not quite!"}$("scoreText").textContent=`Score: ${score}`;$("fact").textContent=q.fact;$("feedback").classList.remove("hidden");$("next").textContent=i===9?"SEE MY RIVER RANK →":"NEXT QUESTION →"}
+function next(){i++;i>=10?finish():render()}
+function cleanNickname(raw){
+  return String(raw||"").replace(/[^a-zA-Z0-9 _-]/g,"").replace(/\s+/g," ").trim().slice(0,18);
+}
+const blockedCompactTerms=[
+  "fuck","fuk","fuc","fuq","shit","sh1t","bitch","biatch","cunt","dick","cock","pussy",
+  "penis","vagina","asshole","azzhole","motherfucker","mfucker","whore","slut","porn",
+  "sex","sexy","boob","titty","titties","nigger","nigga","faggot","retard",
+  "kike","spic","chink","wetback","rape","rapist","nazi","hitler","kkk"
+];
+const blockedWholeWords=["ass","fag"];
+const leetMap={"0":"o","1":"i","2":"z","3":"e","4":"a","5":"s","6":"g","7":"t","8":"b","9":"g"};
+function normalizeLeet(raw){
+  return [...String(raw||"").toLowerCase()].map(ch=>leetMap[ch]||ch).join("");
+}
+function normalizedCompact(raw){
+  return normalizeLeet(raw).replace(/[^a-z]/g,"").replace(/(.)\1{2,}/g,"$1$1");
+}
+function normalizedWords(raw){
+  return normalizeLeet(raw)
+    .replace(/[^a-z]+/g," ")
+    .replace(/\s+/g," ")
+    .trim()
+    .split(" ")
+    .filter(Boolean);
+}
+function nicknameAllowed(raw){
+  const compact=normalizedCompact(raw);
+  if(!compact) return false;
+
+  // Strong terms are blocked even when guests try spacing/punctuation/leet substitutions.
+  if(blockedCompactTerms.some(term=>compact.includes(normalizedCompact(term)))) return false;
+
+  // Short ambiguous terms are blocked only when they appear as a whole word.
+  // This blocks "Ass" or "Big Ass" but does not block names such as "Cassidy".
+  const words=normalizedWords(raw);
+  if(words.some(word=>blockedWholeWords.includes(word))) return false;
+
+  return true;
+}
+const riverAdjectives=["Rapid","Misty","Ozark","Wild","Splashy","Rocky","Swift","Silver","Clever","Brave","Lucky","Rustic","Mighty","Hidden","Rushing"];
+const riverNouns=["Rider","Otter","Raccoon","Explorer","Raft","Beaver","Trout","Fox","Hawk","Caver","Paddler","Adventurer","Navigator","Scout","Voyager"];
+function makeRiverName(){
+  const a=riverAdjectives[Math.floor(Math.random()*riverAdjectives.length)];
+  const b=riverNouns[Math.floor(Math.random()*riverNouns.length)];
+  const num=Math.floor(Math.random()*90)+10;
+  return `${a}${b}${num}`.slice(0,18);
+}
+async function finish(){
+  $("quiz").classList.add("hidden");$("results").classList.remove("hidden");
+  let r=score===10?"Park Legend 🏆":score>=8?"Park Expert 🌊":score>=6?"Seasoned Explorer 🧭":score>=4?"River Scout 🛶":"New Explorer 🗺️";
+  $("rank").textContent=r;$("final").textContent=`${score}/10`;
+  $("copy").textContent=`${player}, your ${currentGameName} challenge is complete!`;
+  $("breakdown").innerHTML=Object.entries(cats).map(([k,v])=>`<div>${k}<br><b>${v[0]}/${v[1]}</b></div>`).join("");
+  const seconds=Math.max(1,Math.round((Date.now()-startedAt)/1000));
+  $("lbStatus").textContent="Updating the River Leaderboard…";$("lbRows").innerHTML="";$("playerRank").classList.add("hidden");
+
+  const cleanName=cleanNickname(player)||"Mystery Rider";
+  const gameToken=`${currentGameId}|${cleanName}|${score}|${seconds}|${startedAt}`;
+  const lastToken=sessionStorage.getItem("mysticLastSubmitted");
+
+  try{
+    if(lastToken!==gameToken){
+      const res=await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`,{
+        method:"POST",
+        headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json","Prefer":"return=minimal"},
+        body:JSON.stringify({game_id:currentGameId,nickname:cleanName,score:score,time_seconds:seconds})
+      });
+      if(!res.ok) throw new Error("submit");
+      sessionStorage.setItem("mysticLastSubmitted",gameToken);
+    }
+    await loadLeaderboard(cleanName,score,seconds);
+  }catch(e){
+    $("lbStatus").textContent="The River Leaderboard couldn't load right now. Your score is still saved above.";
+  }
+}
+async function loadLeaderboard(myName,myScore,myTime){
+  const res=await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?game_id=eq.${currentGameId}&select=id,nickname,score,time_seconds,created_at,game_id&order=score.desc,time_seconds.asc,created_at.asc&limit=100`,{
+    headers:{"apikey":SUPABASE_KEY}
+  });
+  if(!res.ok) throw new Error("read");
+  const rows=await res.json();
+  $("lbStatus").textContent="";
+  const myIndex=rows.findIndex(x=>x.nickname===myName&&x.score===myScore&&x.time_seconds===myTime);
+  if(myIndex>=0){
+    $("playerRank").textContent=`Your current rank: #${myIndex+1} of ${rows.length}`;
+    $("playerRank").classList.remove("hidden");
+  }
+  const top=rows.slice(0,10);
+  $("lbRows").innerHTML=top.map((x,n)=>{
+    const isYou=n===myIndex;
+    const safe=String(x.nickname||"Mystery Rider").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+    const mins=Math.floor((x.time_seconds||0)/60), secs=(x.time_seconds||0)%60;
+    const time=x.time_seconds ? (mins?`${mins}:${String(secs).padStart(2,"0")}`:`${secs}s`) : "—";
+    return `<div class="lb-row ${isYou?"lb-you":""}"><span class="lb-rank">#${n+1}</span><span class="lb-name">${safe}${isYou?" • YOU":""}</span><span class="lb-score">${x.score}/10</span><span class="lb-time">${time}</span></div>`;
+  }).join("");
+  if(!top.length)$("lbStatus").textContent="Be the first explorer on the leaderboard!";
+}
+$("randomNameBtn").onclick=()=>{
+  $("name").value=makeRiverName();
+  $("nameMsg").textContent="River name ready!";
+  $("nameMsg").className="name-msg";
+  $("name").focus();
+};
+$("name").addEventListener("input",()=>{
+  $("nameMsg").textContent="";
+  $("nameMsg").className="name-msg";
+});
+$("startBtn").onclick=async()=>{
+  const cleaned=cleanNickname($("name").value);
+  if(cleaned.length<2){
+    $("name").value="";
+    $("name").placeholder="Enter at least 2 characters";
+    $("nameMsg").textContent="Your river name needs at least 2 characters.";
+    $("nameMsg").className="name-msg bad";
+    $("name").focus();
+    return;
+  }
+  if(!nicknameAllowed(cleaned)){
+    $("nameMsg").textContent="That river name can't be used. Try another one!";
+    $("nameMsg").className="name-msg bad";
+    $("name").focus();
+    return;
+  }
+  $("name").value=cleaned;
+  $("nameMsg").textContent="";
+  $("startBtn").disabled=true;
+  const oldText=$("startBtn").textContent;
+  $("startBtn").textContent="LOADING QUESTIONS...";
+  try{
+    await loadQuestions();
+    start();
+  }catch(err){
+    console.error(err);
+    $("nameMsg").textContent="We couldn't load the trivia questions. Please try again.";
+    $("nameMsg").className="name-msg bad";
+  }finally{
+    $("startBtn").disabled=false;
+    $("startBtn").textContent=oldText;
+  }
+};$("name").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("startBtn").click()}};$("next").onclick=next;$("again").onclick=start;$("newname").onclick=()=>{$("results").classList.add("hidden");$("start").classList.remove("hidden");$("name").value=""}
+</script></body></html>
