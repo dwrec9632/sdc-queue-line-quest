@@ -1,13 +1,15 @@
-MYSTIC RIVER TRIVIA V8 — DIAGNOSTIC BUILD
+MYSTIC RIVER TRIVIA V10 — GUEST BUILD
 
-This build shows the exact Supabase response on the results page.
+Guest-facing cleanup:
+- Diagnostic error box removed.
+- Live Supabase leaderboard retained.
+- Top 10 + player's current rank retained.
+- Score first, completion time as tiebreaker.
+- Nicknames limited to 2–18 characters and basic safe characters.
+- Duplicate score submission protection added for the current browser session.
+- Cleaner guest-facing footer.
+- Correct Supabase project URL retained.
 
-Please complete one game and send a screenshot of the brown diagnostic box.
-It will show whether the issue is:
-- bad project URL
-- invalid key
-- permission/RLS problem
-- table/schema issue
-- browser/network issue
-
-No secret keys are included.
+UPLOAD:
+Replace index.html in the GitHub repository with this V10 index.html.
+The existing mystic-river-falls.png can remain unchanged.
