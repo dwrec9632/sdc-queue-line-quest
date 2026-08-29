@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trivia Admin</title>
+<style>
+:root{--bg:#082e31;--panel:#0b3b3f;--wood:#7a4d2b;--gold:#c79555;--cream:#f6eddb;--cyan:#67d6e5;--muted:#b8c7c5;--danger:#b8564d}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--cream);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button,input,select,textarea{font:inherit}.wrap{max-width:1180px;margin:auto;padding:22px}h1,h2,h3{font-family:Georgia,serif}
+.top{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}.card{background:var(--panel);border:2px solid var(--wood);border-radius:16px;padding:18px;box-shadow:0 5px 18px #0003}
+.hidden{display:none!important}label{display:block;font-weight:700;margin:12px 0 6px}input,select,textarea{width:100%;padding:11px;border-radius:9px;border:1px solid var(--gold);background:#fff8ea;color:#222}
+textarea{min-height:86px;resize:vertical}button{border:0;border-radius:9px;padding:10px 14px;font-weight:800;cursor:pointer;background:var(--cyan);color:#05343a}
+button.secondary{background:#7e5a3b;color:white}button.danger{background:var(--danger);color:white}button.small{padding:7px 10px;font-size:.9rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:14px 0}.toolbar>div{flex:1;min-width:170px}
+.msg{margin-top:10px;min-height:1.2em;font-weight:700;color:#ffd58a}.bad{color:#ffaaa0}.ok{color:#9ee0c7}
+.qitem{background:#0a3539;border:1px solid #8c663f;border-radius:12px;padding:13px;margin:10px 0}.qhead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#74502f;margin-right:6px;font-size:.78rem}.inactive{opacity:.55}
+.actions{display:flex;gap:7px;flex-wrap:wrap}.muted{color:var(--muted);font-size:.9rem}.stats{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}
+.stat{background:#6b482e;padding:7px 10px;border-radius:8px}dialog{width:min(760px,94vw);border:2px solid var(--wood);border-radius:16px;padding:0;background:var(--panel);color:var(--cream)}
+dialog::backdrop{background:#0009}.dialog-body{padding:18px}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap}
+.login{max-width:430px;margin:8vh auto}.footer{text-align:center;color:#9bb0ad;margin:24px 0;font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section id="loginView" class="card login">
+  <h1>Trivia Admin</h1>
+  <p class="muted">Sign in with your authorized administrator account.</p>
+  <label>Email</label><input id="email" type="email" autocomplete="username">
+  <label>Password</label><input id="password" type="password" autocomplete="current-password">
+  <button id="loginBtn" style="margin-top:14px;width:100%">SIGN IN</button>
+  <div id="loginMsg" class="msg"></div>
+</section>
+
+<section id="adminView" class="hidden">
+  <div class="top">
+    <div><h1 style="margin-bottom:4px">Trivia Admin Dashboard</h1><div id="who" class="muted"></div></div>
+    <div class="actions"><button id="newGameBtn" class="secondary">+ NEW GAME</button><button id="logoutBtn" class="danger">LOG OUT</button></div>
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <div><label>Ride / Game</label><select id="gameSelect"></select></div>
+      <div><label>Search questions</label><input id="search" placeholder="Search question, category, answer..."></div>
+      <div><label>Difficulty</label><select id="diffFilter"><option value="">All</option><option>Easy</option><option>Medium</option><option>Hard</option></select></div>
+      <div><label>Status</label><select id="statusFilter"><option value="">All</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+    </div>
+    <div class="top">
+      <div id="gameMeta"></div>
+      <div class="actions"><button id="editGameBtn" class="secondary">EDIT GAME</button><button id="newQBtn">+ ADD QUESTION</button></div>
+    </div>
+    <div id="stats" class="stats"></div>
+    <div id="adminMsg" class="msg"></div>
+    <div id="questions"></div>
+  </div>
+  <div class="footer">Trivia Admin • V1</div>
+</section>
+</div>
+
+<dialog id="questionDialog"><div class="dialog-body">
+<h2 id="qTitle">Question</h2>
+<input id="qid" type="hidden">
+<label>Question</label><textarea id="qtext"></textarea>
+<div class="grid2">
+<div><label>Answer A</label><input id="qa"></div><div><label>Answer B</label><input id="qb"></div>
+<div><label>Answer C</label><input id="qc"></div><div><label>Answer D</label><input id="qd"></div>
+</div>
+<div class="grid2">
+<div><label>Correct answer</label><select id="qcorrect"><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+<div><label>Difficulty</label><select id="qdifficulty"><option>Easy</option><option>Medium</option><option>Hard</option></select></div>
+</div>
+<label>Category</label><input id="qcategory" placeholder="e.g. Mystic River Falls">
+<label>Fun fact</label><textarea id="qfact"></textarea>
+<label><input id="qactive" type="checkbox" style="width:auto"> Active / available to guests</label>
+<div id="qMsg" class="msg"></div>
+<div class="dialog-actions"><button id="deleteQBtn" class="danger hidden">DELETE</button><button id="cancelQBtn" class="secondary">CANCEL</button><button id="saveQBtn">SAVE QUESTION</button></div>
+</div></dialog>
+
+<dialog id="gameDialog"><div class="dialog-body">
+<h2 id="gTitle">Game</h2>
+<input id="gid" type="hidden">
+<label>Name</label><input id="gname" placeholder="Mystic River Falls Trivia">
+<label>URL slug</label><input id="gslug" placeholder="mystic-river-falls">
+<label>Subtitle</label><input id="gsubtitle">
+<label><input id="gactive" type="checkbox" style="width:auto"> Active / available to guests</label>
+<div id="gMsg" class="msg"></div>
+<div class="dialog-actions"><button id="cancelGBtn" class="secondary">CANCEL</button><button id="saveGBtn">SAVE GAME</button></div>
+</div></dialog>
+
+<script>
+const SUPABASE_URL="https://jrvegxhfwnytphdnkobp.supabase.co";
+const SUPABASE_KEY="sb_publishable_Rclep80mOH2QMXBXNHJlJQ_KrKISheH";
+const $=id=>document.getElementById(id);
+let token=sessionStorage.getItem("triviaAdminToken")||"";
+let currentUser=null,games=[],questions=[],selectedGame=null;
+
+function headers(auth=true,extra={}){
+  const h={apikey:SUPABASE_KEY,"Content-Type":"application/json",...extra};
+  if(auth&&token) h.Authorization=`Bearer ${token}`;
+  return h;
+}
+async function api(path,opts={}){
+  const r=await fetch(SUPABASE_URL+path,{...opts,headers:headers(true,opts.headers||{})});
+  const text=await r.text(); let data=null;
+  try{data=text?JSON.parse(text):null}catch{data=text}
+  if(!r.ok) throw new Error((data&&data.message)||(data&&data.msg)||data||`Request failed (${r.status})`);
+  return data;
+}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function slugify(s){return String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)}
+function setMsg(id,msg,kind=""){$(id).textContent=msg;$(id).className="msg "+kind}
+
+async function login(){
+  setMsg("loginMsg","Signing in...");
+  try{
+    const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{
+      method:"POST",headers:headers(false),body:JSON.stringify({email:$("email").value.trim(),password:$("password").value})
+    });
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error_description||d.msg||"Sign in failed.");
+    token=d.access_token;sessionStorage.setItem("triviaAdminToken",token);
+    await boot();
+  }catch(e){setMsg("loginMsg",e.message,"bad")}
+}
+async function boot(){
+  try{
+    currentUser=await api("/auth/v1/user");
+    const admins=await api(`/rest/v1/admin_users?user_id=eq.${encodeURIComponent(currentUser.id)}&select=user_id`);
+    if(!admins.length) throw new Error("This account is not authorized as an administrator.");
+    $("who").textContent=currentUser.email||"Administrator";
+    $("loginView").classList.add("hidden");$("adminView").classList.remove("hidden");
+    await loadGames();
+  }catch(e){
+    sessionStorage.removeItem("triviaAdminToken");token="";
+    $("adminView").classList.add("hidden");$("loginView").classList.remove("hidden");
+    setMsg("loginMsg",e.message,"bad");
+  }
+}
+async function loadGames(){
+  games=await api("/rest/v1/games?select=id,slug,name,subtitle,is_active,created_at&order=name.asc");
+  $("gameSelect").innerHTML=games.map(g=>`<option value="${g.id}">${esc(g.name)}${g.is_active?"":" (Inactive)"}</option>`).join("");
+  if(!games.length){selectedGame=null;questions=[];render();return}
+  const wanted=selectedGame&&games.find(g=>g.id===selectedGame.id);
+  selectedGame=wanted||games[0];
+  $("gameSelect").value=selectedGame.id;
+  await loadQuestions();
+}
+async function loadQuestions(){
+  if(!selectedGame)return;
+  questions=await api(`/rest/v1/questions?game_id=eq.${selectedGame.id}&select=*&order=created_at.asc&limit=1000`);
+  render();
+}
+function render(){
+  if(!selectedGame){$("gameMeta").innerHTML="<h2>No games yet</h2>";$("questions").innerHTML="";return}
+  $("gameMeta").innerHTML=`<h2 style="margin-bottom:3px">${esc(selectedGame.name)}</h2><div class="muted">/${esc(selectedGame.slug)} • ${selectedGame.is_active?"Active":"Inactive"}</div>`;
+  const active=questions.filter(q=>q.is_active).length;
+  const e=questions.filter(q=>q.is_active&&q.difficulty==="Easy").length;
+  const m=questions.filter(q=>q.is_active&&q.difficulty==="Medium").length;
+  const h=questions.filter(q=>q.is_active&&q.difficulty==="Hard").length;
+  $("stats").innerHTML=`<span class="stat">${questions.length} total</span><span class="stat">${active} active</span><span class="stat">${e} Easy</span><span class="stat">${m} Medium</span><span class="stat">${h} Hard</span>`;
+  const term=$("search").value.toLowerCase().trim(),diff=$("diffFilter").value,status=$("statusFilter").value;
+  const filtered=questions.filter(q=>{
+    const blob=[q.question_text,q.choice_a,q.choice_b,q.choice_c,q.choice_d,q.fun_fact,q.category].join(" ").toLowerCase();
+    return (!term||blob.includes(term))&&(!diff||q.difficulty===diff)&&(!status||(status==="active"?q.is_active:!q.is_active));
+  });
+  $("questions").innerHTML=filtered.length?filtered.map(q=>`
+    <div class="qitem ${q.is_active?"":"inactive"}">
+      <div class="qhead"><div><span class="badge">${esc(q.difficulty)}</span><span class="badge">${esc(q.category||"Uncategorized")}</span>${q.is_active?"":"<span class='badge'>Inactive</span>"}</div>
+      <div class="actions"><button class="small secondary" onclick="editQuestion(${q.id})">EDIT</button><button class="small" onclick="toggleQuestion(${q.id})">${q.is_active?"DEACTIVATE":"ACTIVATE"}</button></div></div>
+      <h3>${esc(q.question_text)}</h3>
+      <div class="muted">A. ${esc(q.choice_a)} &nbsp; B. ${esc(q.choice_b)} &nbsp; C. ${esc(q.choice_c)} &nbsp; D. ${esc(q.choice_d)}</div>
+      <div class="muted" style="margin-top:6px">Correct: <b>${esc(q.correct_choice)}</b>${q.fun_fact?" • "+esc(q.fun_fact):""}</div>
+    </div>`).join(""):"<p class='muted'>No questions match these filters.</p>";
+}
+function openNewQuestion(){
+  $("qTitle").textContent="Add Question";$("qid").value="";
+  ["qtext","qa","qb","qc","qd","qcategory","qfact"].forEach(id=>$(id).value="");
+  $("qcorrect").value="A";$("qdifficulty").value="Easy";$("qactive").checked=true;
+  $("deleteQBtn").classList.add("hidden");setMsg("qMsg","");$("questionDialog").showModal();
+}
+window.editQuestion=id=>{
+  const q=questions.find(x=>x.id===id);if(!q)return;
+  $("qTitle").textContent="Edit Question";$("qid").value=q.id;$("qtext").value=q.question_text;$("qa").value=q.choice_a;$("qb").value=q.choice_b;$("qc").value=q.choice_c;$("qd").value=q.choice_d;
+  $("qcorrect").value=q.correct_choice;$("qdifficulty").value=q.difficulty;$("qcategory").value=q.category||"";$("qfact").value=q.fun_fact||"";$("qactive").checked=q.is_active;
+  $("deleteQBtn").classList.remove("hidden");setMsg("qMsg","");$("questionDialog").showModal();
+}
+async function saveQuestion(){
+  const payload={game_id:selectedGame.id,question_text:$("qtext").value.trim(),choice_a:$("qa").value.trim(),choice_b:$("qb").value.trim(),choice_c:$("qc").value.trim(),choice_d:$("qd").value.trim(),correct_choice:$("qcorrect").value,fun_fact:$("qfact").value.trim(),category:$("qcategory").value.trim(),difficulty:$("qdifficulty").value,is_active:$("qactive").checked};
+  if(!payload.question_text||!payload.choice_a||!payload.choice_b||!payload.choice_c||!payload.choice_d){setMsg("qMsg","Question and all four answers are required.","bad");return}
+  try{
+    const id=$("qid").value;
+    if(id) await api(`/rest/v1/questions?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(payload),headers:{Prefer:"return=minimal"}});
+    else await api("/rest/v1/questions",{method:"POST",body:JSON.stringify(payload),headers:{Prefer:"return=minimal"}});
+    $("questionDialog").close();await loadQuestions();setMsg("adminMsg","Question saved.","ok");
+  }catch(e){setMsg("qMsg",e.message,"bad")}
+}
+window.toggleQuestion=async id=>{
+  const q=questions.find(x=>x.id===id);if(!q)return;
+  try{await api(`/rest/v1/questions?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({is_active:!q.is_active}),headers:{Prefer:"return=minimal"}});await loadQuestions()}
+  catch(e){setMsg("adminMsg",e.message,"bad")}
+}
+async function deleteQuestion(){
+  const id=$("qid").value;if(!id||!confirm("Permanently delete this question?"))return;
+  try{await api(`/rest/v1/questions?id=eq.${id}`,{method:"DELETE",headers:{Prefer:"return=minimal"}});$("questionDialog").close();await loadQuestions();setMsg("adminMsg","Question deleted.","ok")}
+  catch(e){setMsg("qMsg",e.message,"bad")}
+}
+function openGame(g=null){
+  $("gTitle").textContent=g?"Edit Game":"New Game";$("gid").value=g?.id||"";$("gname").value=g?.name||"";$("gslug").value=g?.slug||"";$("gsubtitle").value=g?.subtitle||"";$("gactive").checked=g?g.is_active:true;setMsg("gMsg","");$("gameDialog").showModal();
+}
+async function saveGame(){
+  const payload={name:$("gname").value.trim(),slug:slugify($("gslug").value||$("gname").value),subtitle:$("gsubtitle").value.trim(),is_active:$("gactive").checked};
+  if(!payload.name||!payload.slug){setMsg("gMsg","Name and slug are required.","bad");return}
+  try{
+    const id=$("gid").value;
+    if(id) await api(`/rest/v1/games?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(payload),headers:{Prefer:"return=minimal"}});
+    else await api("/rest/v1/games",{method:"POST",body:JSON.stringify(payload),headers:{Prefer:"return=minimal"}});
+    $("gameDialog").close();await loadGames();setMsg("adminMsg","Game saved.","ok");
+  }catch(e){setMsg("gMsg",e.message,"bad")}
+}
+$("loginBtn").onclick=login;$("password").onkeydown=e=>{if(e.key==="Enter")login()};
+$("logoutBtn").onclick=()=>{sessionStorage.removeItem("triviaAdminToken");location.reload()};
+$("gameSelect").onchange=async()=>{selectedGame=games.find(g=>String(g.id)===$("gameSelect").value);await loadQuestions()};
+["search","diffFilter","statusFilter"].forEach(id=>$(id).addEventListener("input",render));
+$("newQBtn").onclick=openNewQuestion;$("cancelQBtn").onclick=()=>$("questionDialog").close();$("saveQBtn").onclick=saveQuestion;$("deleteQBtn").onclick=deleteQuestion;
+$("newGameBtn").onclick=()=>openGame();$("editGameBtn").onclick=()=>selectedGame&&openGame(selectedGame);$("cancelGBtn").onclick=()=>$("gameDialog").close();$("saveGBtn").onclick=saveGame;
+$("gname").addEventListener("input",()=>{if(!$("gid").value)$("gslug").value=slugify($("gname").value)});
+if(token)boot();
+</script>
+</body>
+</html>
