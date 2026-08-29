@@ -55,7 +55,7 @@ dialog::backdrop{background:#0009}.dialog-body{padding:18px}.dialog-actions{disp
     <div id="adminMsg" class="msg"></div>
     <div id="questions"></div>
   </div>
-  <div class="footer">Trivia Admin • V1</div>
+  <div class="footer">Trivia Admin • V2</div>
 </section>
 </div>
 
@@ -139,7 +139,7 @@ async function boot(){
   }
 }
 async function loadGames(){
-  games=await api("/rest/v1/games?select=id,slug,name,subtitle,is_active,created_at&order=name.asc");
+  games=await api("/rest/v1/games?select=id,slug,name,subtitle,hero_image_url,is_active,created_at&order=name.asc");
   $("gameSelect").innerHTML=games.map(g=>`<option value="${g.id}">${esc(g.name)}${g.is_active?"":" (Inactive)"}</option>`).join("");
   if(!games.length){selectedGame=null;questions=[];render();return}
   const wanted=selectedGame&&games.find(g=>g.id===selectedGame.id);
@@ -227,6 +227,91 @@ $("newQBtn").onclick=openNewQuestion;$("cancelQBtn").onclick=()=>$("questionDial
 $("newGameBtn").onclick=()=>openGame();$("editGameBtn").onclick=()=>selectedGame&&openGame(selectedGame);$("cancelGBtn").onclick=()=>$("gameDialog").close();$("saveGBtn").onclick=saveGame;
 $("gname").addEventListener("input",()=>{if(!$("gid").value)$("gslug").value=slugify($("gname").value)});
 if(token)boot();
+
+async function uploadGameHero(file, gameId){
+  if(!file) return $("gameHeroUrl")?.value || null;
+  if(file.size > 5*1024*1024) throw new Error("Photo must be 5 MB or smaller.");
+  const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
+  const safeExt=["jpg","jpeg","png","webp"].includes(ext)?ext:"jpg";
+  const objectPath=`games/${gameId}-${Date.now()}.${safeExt}`;
+  const r=await fetch(`${SUPABASE_URL}/storage/v1/object/game-images/${objectPath}`,{
+    method:"POST",
+    headers:{
+      "apikey":SUPABASE_KEY,
+      "Authorization":`Bearer ${accessToken}`,
+      "Content-Type":file.type||"image/jpeg",
+      "x-upsert":"false"
+    },
+    body:file
+  });
+  if(!r.ok) throw new Error(await r.text());
+  return `${SUPABASE_URL}/storage/v1/object/public/game-images/${objectPath}`;
+}
+
+function setHeroPreview(url){
+  const wrap=$("gameHeroPreviewWrap"), img=$("gameHeroPreview"), hidden=$("gameHeroUrl");
+  if(hidden) hidden.value=url||"";
+  if(wrap && img){
+    if(url){ img.src=url; wrap.style.display="block"; }
+    else { img.removeAttribute("src"); wrap.style.display="none"; }
+  }
+}
+
+const heroFileInput=$("gameHeroFile");
+if(heroFileInput){
+  heroFileInput.addEventListener("change",()=>{
+    const f=heroFileInput.files?.[0];
+    if(!f) return;
+    setHeroPreview(URL.createObjectURL(f));
+  });
+}
+
+
+function getEditingGameId(){
+  const candidates=[
+    window.editingGameId,
+    window.currentGameId,
+    window.selectedGameId,
+    $("gameId")?.value,
+    $("editGameId")?.value
+  ];
+  for(const v of candidates){
+    const n=Number(v);
+    if(Number.isFinite(n) && n>0) return n;
+  }
+  return null;
+}
+
+const uploadHeroBtn=$("uploadHeroBtn");
+if(uploadHeroBtn){
+  uploadHeroBtn.addEventListener("click", async ()=>{
+    try{
+      const gameId=getEditingGameId();
+      if(!gameId) throw new Error("Save the game first, then reopen it and upload the photo.");
+      const file=$("gameHeroFile")?.files?.[0];
+      if(!file) throw new Error("Choose a photo first.");
+      $("heroUploadStatus").textContent="Uploading...";
+      const url=await uploadGameHero(file, gameId);
+      const r=await fetch(`${SUPABASE_URL}/rest/v1/games?id=eq.${gameId}`,{
+        method:"PATCH",
+        headers:{
+          "apikey":SUPABASE_KEY,
+          "Authorization":`Bearer ${accessToken}`,
+          "Content-Type":"application/json",
+          "Prefer":"return=representation"
+        },
+        body:JSON.stringify({hero_image_url:url})
+      });
+      if(!r.ok) throw new Error(await r.text());
+      setHeroPreview(url);
+      $("heroUploadStatus").textContent="Photo uploaded and saved.";
+      await loadGames();
+    }catch(err){
+      $("heroUploadStatus").textContent=err.message||String(err);
+    }
+  });
+}
+
 </script>
 </body>
 </html>
