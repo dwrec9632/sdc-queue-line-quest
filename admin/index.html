@@ -55,7 +55,7 @@ dialog::backdrop{background:#0009}.dialog-body{padding:18px}.dialog-actions{disp
     <div id="adminMsg" class="msg"></div>
     <div id="questions"></div>
   </div>
-  <div class="footer">Trivia Admin • V2</div>
+  <div class="footer">Trivia Admin • V1</div>
 </section>
 </div>
 
@@ -84,6 +84,14 @@ dialog::backdrop{background:#0009}.dialog-body{padding:18px}.dialog-actions{disp
 <label>Name</label><input id="gname" placeholder="Mystic River Falls Trivia">
 <label>URL slug</label><input id="gslug" placeholder="mystic-river-falls">
 <label>Subtitle</label><input id="gsubtitle">
+<label>Hero Photo</label>
+<input id="ghero" type="file" accept="image/jpeg,image/png,image/webp">
+<div style="font-size:12px;opacity:.75;margin-top:4px">JPG, PNG or WebP • maximum 5 MB</div>
+<div id="gheroPreviewWrap" class="hidden" style="margin-top:10px">
+  <img id="gheroPreview" alt="Hero photo preview" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px">
+</div>
+<button id="uploadHeroBtn" type="button" class="secondary" style="margin-top:10px">UPLOAD HERO PHOTO</button>
+<div id="heroMsg" class="msg"></div>
 <label><input id="gactive" type="checkbox" style="width:auto"> Active / available to guests</label>
 <div id="gMsg" class="msg"></div>
 <div class="dialog-actions"><button id="cancelGBtn" class="secondary">CANCEL</button><button id="saveGBtn">SAVE GAME</button></div>
@@ -207,7 +215,51 @@ async function deleteQuestion(){
   catch(e){setMsg("qMsg",e.message,"bad")}
 }
 function openGame(g=null){
-  $("gTitle").textContent=g?"Edit Game":"New Game";$("gid").value=g?.id||"";$("gname").value=g?.name||"";$("gslug").value=g?.slug||"";$("gsubtitle").value=g?.subtitle||"";$("gactive").checked=g?g.is_active:true;setMsg("gMsg","");$("gameDialog").showModal();
+  $("gTitle").textContent=g?"Edit Game":"New Game";$("gid").value=g?.id||"";$("gname").value=g?.name||"";$("gslug").value=g?.slug||"";$("gsubtitle").value=g?.subtitle||"";
+  $("ghero").value="";
+  setMsg("heroMsg","");
+  if(g?.hero_image_url){
+    $("gheroPreview").src=g.hero_image_url;
+    $("gheroPreviewWrap").classList.remove("hidden");
+  }else{
+    $("gheroPreview").removeAttribute("src");
+    $("gheroPreviewWrap").classList.add("hidden");
+  }
+  $("gactive").checked=g?g.is_active:true;setMsg("gMsg","");$("gameDialog").showModal();
+}
+async function uploadHeroPhoto(){
+  const id=$("gid").value;
+  if(!id){setMsg("heroMsg","Save the game first, then reopen it to upload a photo.","bad");return}
+  const file=$("ghero").files?.[0];
+  if(!file){setMsg("heroMsg","Choose a photo first.","bad");return}
+  if(file.size>5*1024*1024){setMsg("heroMsg","Photo must be 5 MB or smaller.","bad");return}
+  try{
+    setMsg("heroMsg","Uploading...");
+    const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
+    const safeExt=["jpg","jpeg","png","webp"].includes(ext)?ext:"jpg";
+    const objectPath=`games/${id}-${Date.now()}.${safeExt}`;
+    const r=await fetch(`${SUPABASE_URL}/storage/v1/object/game-images/${objectPath}`,{
+      method:"POST",
+      headers:{
+        apikey:SUPABASE_KEY,
+        Authorization:`Bearer ${token}`,
+        "Content-Type":file.type||"image/jpeg",
+        "x-upsert":"false"
+      },
+      body:file
+    });
+    if(!r.ok) throw new Error(await r.text());
+    const url=`${SUPABASE_URL}/storage/v1/object/public/game-images/${objectPath}`;
+    await api(`/rest/v1/games?id=eq.${id}`,{
+      method:"PATCH",
+      body:JSON.stringify({hero_image_url:url}),
+      headers:{Prefer:"return=minimal"}
+    });
+    $("gheroPreview").src=url;
+    $("gheroPreviewWrap").classList.remove("hidden");
+    setMsg("heroMsg","Photo uploaded and saved.","ok");
+    await loadGames();
+  }catch(e){setMsg("heroMsg",e.message,"bad")}
 }
 async function saveGame(){
   const payload={name:$("gname").value.trim(),slug:slugify($("gslug").value||$("gname").value),subtitle:$("gsubtitle").value.trim(),is_active:$("gactive").checked};
@@ -224,94 +276,20 @@ $("logoutBtn").onclick=()=>{sessionStorage.removeItem("triviaAdminToken");locati
 $("gameSelect").onchange=async()=>{selectedGame=games.find(g=>String(g.id)===$("gameSelect").value);await loadQuestions()};
 ["search","diffFilter","statusFilter"].forEach(id=>$(id).addEventListener("input",render));
 $("newQBtn").onclick=openNewQuestion;$("cancelQBtn").onclick=()=>$("questionDialog").close();$("saveQBtn").onclick=saveQuestion;$("deleteQBtn").onclick=deleteQuestion;
+$("uploadHeroBtn").onclick=uploadHeroPhoto;
 $("newGameBtn").onclick=()=>openGame();$("editGameBtn").onclick=()=>selectedGame&&openGame(selectedGame);$("cancelGBtn").onclick=()=>$("gameDialog").close();$("saveGBtn").onclick=saveGame;
 $("gname").addEventListener("input",()=>{if(!$("gid").value)$("gslug").value=slugify($("gname").value)});
+
+$("ghero").addEventListener("change",()=>{
+  const file=$("ghero").files?.[0];
+  if(!file)return;
+  $("gheroPreview").src=URL.createObjectURL(file);
+  $("gheroPreviewWrap").classList.remove("hidden");
+  setMsg("heroMsg","Photo selected. Click UPLOAD HERO PHOTO to save it.");
+});
+
 if(token)boot();
-
-async function uploadGameHero(file, gameId){
-  if(!file) return $("gameHeroUrl")?.value || null;
-  if(file.size > 5*1024*1024) throw new Error("Photo must be 5 MB or smaller.");
-  const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
-  const safeExt=["jpg","jpeg","png","webp"].includes(ext)?ext:"jpg";
-  const objectPath=`games/${gameId}-${Date.now()}.${safeExt}`;
-  const r=await fetch(`${SUPABASE_URL}/storage/v1/object/game-images/${objectPath}`,{
-    method:"POST",
-    headers:{
-      "apikey":SUPABASE_KEY,
-      "Authorization":`Bearer ${accessToken}`,
-      "Content-Type":file.type||"image/jpeg",
-      "x-upsert":"false"
-    },
-    body:file
-  });
-  if(!r.ok) throw new Error(await r.text());
-  return `${SUPABASE_URL}/storage/v1/object/public/game-images/${objectPath}`;
-}
-
-function setHeroPreview(url){
-  const wrap=$("gameHeroPreviewWrap"), img=$("gameHeroPreview"), hidden=$("gameHeroUrl");
-  if(hidden) hidden.value=url||"";
-  if(wrap && img){
-    if(url){ img.src=url; wrap.style.display="block"; }
-    else { img.removeAttribute("src"); wrap.style.display="none"; }
-  }
-}
-
-const heroFileInput=$("gameHeroFile");
-if(heroFileInput){
-  heroFileInput.addEventListener("change",()=>{
-    const f=heroFileInput.files?.[0];
-    if(!f) return;
-    setHeroPreview(URL.createObjectURL(f));
-  });
-}
-
-
-function getEditingGameId(){
-  const candidates=[
-    window.editingGameId,
-    window.currentGameId,
-    window.selectedGameId,
-    $("gameId")?.value,
-    $("editGameId")?.value
-  ];
-  for(const v of candidates){
-    const n=Number(v);
-    if(Number.isFinite(n) && n>0) return n;
-  }
-  return null;
-}
-
-const uploadHeroBtn=$("uploadHeroBtn");
-if(uploadHeroBtn){
-  uploadHeroBtn.addEventListener("click", async ()=>{
-    try{
-      const gameId=getEditingGameId();
-      if(!gameId) throw new Error("Save the game first, then reopen it and upload the photo.");
-      const file=$("gameHeroFile")?.files?.[0];
-      if(!file) throw new Error("Choose a photo first.");
-      $("heroUploadStatus").textContent="Uploading...";
-      const url=await uploadGameHero(file, gameId);
-      const r=await fetch(`${SUPABASE_URL}/rest/v1/games?id=eq.${gameId}`,{
-        method:"PATCH",
-        headers:{
-          "apikey":SUPABASE_KEY,
-          "Authorization":`Bearer ${accessToken}`,
-          "Content-Type":"application/json",
-          "Prefer":"return=representation"
-        },
-        body:JSON.stringify({hero_image_url:url})
-      });
-      if(!r.ok) throw new Error(await r.text());
-      setHeroPreview(url);
-      $("heroUploadStatus").textContent="Photo uploaded and saved.";
-      await loadGames();
-    }catch(err){
-      $("heroUploadStatus").textContent=err.message||String(err);
-    }
-  });
-}
-
 </script>
+<div style="text-align:center;opacity:.55;font-size:11px;padding:8px">SDC Queue Line Quest Admin • V3</div>
 </body>
 </html>
