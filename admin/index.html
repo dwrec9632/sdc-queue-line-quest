@@ -54,10 +54,24 @@ dialog::backdrop{background:#0009}.dialog-body{padding:18px}.dialog-actions{disp
     <div id="stats" class="stats"></div>
     <div id="adminMsg" class="msg"></div>
     <div id="questions"></div>
+    <hr style="border:0;border-top:1px solid #35545a;margin:28px 0 20px">
+    <div class="top"><div><h2 style="margin-bottom:3px">Adventure Facts</h2><div class="muted">Shown randomly after questions 4 and 8.</div></div>
+    <div class="actions"><button id="newFactBtn">+ ADD ADVENTURE FACT</button></div></div>
+    <div id="factStats" class="stats"></div>
+    <div id="adventureFacts"></div>
   </div>
-  <div class="footer">SDC Queue Line Quest Admin • V4</div>
+  <div class="footer">SDC Queue Line Quest Admin • V5</div>
 </section>
 </div>
+
+<dialog id="factDialog"><div class="dialog-body">
+<h2 id="afTitle">Adventure Fact</h2>
+<input id="afid" type="hidden">
+<label>Adventure Fact</label><textarea id="aftext" placeholder="Enter a short attraction-specific fact..."></textarea>
+<label><input id="afactive" type="checkbox" style="width:auto"> Active / available to guests</label>
+<div id="afMsg" class="msg"></div>
+<div class="dialog-actions"><button id="deleteAFBtn" class="danger hidden">DELETE</button><button id="cancelAFBtn" class="secondary">CANCEL</button><button id="saveAFBtn">SAVE FACT</button></div>
+</div></dialog>
 
 <dialog id="questionDialog"><div class="dialog-body">
 <h2 id="qTitle">Question</h2>
@@ -102,7 +116,7 @@ const SUPABASE_URL="https://jrvegxhfwnytphdnkobp.supabase.co";
 const SUPABASE_KEY="sb_publishable_Rclep80mOH2QMXBXNHJlJQ_KrKISheH";
 const $=id=>document.getElementById(id);
 let token=sessionStorage.getItem("triviaAdminToken")||"";
-let currentUser=null,games=[],questions=[],selectedGame=null;
+let currentUser=null,games=[],questions=[],adventureFacts=[],selectedGame=null;
 
 function headers(auth=true,extra={}){
   const h={apikey:SUPABASE_KEY,"Content-Type":"application/json",...extra};
@@ -158,6 +172,7 @@ async function loadGames(){
 async function loadQuestions(){
   if(!selectedGame)return;
   questions=await api(`/rest/v1/questions?game_id=eq.${selectedGame.id}&select=*&order=created_at.asc&limit=1000`);
+  adventureFacts=await api(`/rest/v1/adventure_facts?game_id=eq.${selectedGame.id}&select=*&order=created_at.asc&limit=1000`);
   render();
 }
 function render(){
@@ -180,7 +195,43 @@ function render(){
       <h3>${esc(q.question_text)}</h3>
       <div class="muted">A. ${esc(q.choice_a)} &nbsp; B. ${esc(q.choice_b)} &nbsp; C. ${esc(q.choice_c)} &nbsp; D. ${esc(q.choice_d)}</div>
       <div class="muted" style="margin-top:6px">Correct: <b>${esc(q.correct_choice)}</b>${q.fun_fact?" • "+esc(q.fun_fact):""}</div>
-    </div>`).join(""):"<p class='muted'>No questions match these filters.</p>";
+    </div>`).join(""):"<p class='muted'>No questions match these filters.</p>";  const afActive=adventureFacts.filter(f=>f.is_active).length;
+  $("factStats").innerHTML=`<span class="stat">${adventureFacts.length} total</span><span class="stat">${afActive} active</span>`;
+  $("adventureFacts").innerHTML=adventureFacts.length?adventureFacts.map(f=>`
+    <div class="qitem ${f.is_active?"":"inactive"}">
+      <div class="qhead"><div><span class="badge">Adventure Fact</span>${f.is_active?"":"<span class='badge'>Inactive</span>"}</div>
+      <div class="actions"><button class="small secondary" onclick="editAdventureFact(${f.id})">EDIT</button><button class="small" onclick="toggleAdventureFact(${f.id})">${f.is_active?"DEACTIVATE":"ACTIVATE"}</button></div></div>
+      <h3>${esc(f.fact_text)}</h3>
+    </div>`).join(""):"<p class='muted'>No Adventure Facts yet. Add at least two for intermissions.</p>";
+}
+function openNewAdventureFact(){
+  $("afTitle").textContent="Add Adventure Fact";$("afid").value="";$("aftext").value="";$("afactive").checked=true;
+  $("deleteAFBtn").classList.add("hidden");setMsg("afMsg","");$("factDialog").showModal();
+}
+window.editAdventureFact=id=>{
+  const f=adventureFacts.find(x=>x.id===id);if(!f)return;
+  $("afTitle").textContent="Edit Adventure Fact";$("afid").value=f.id;$("aftext").value=f.fact_text;$("afactive").checked=f.is_active;
+  $("deleteAFBtn").classList.remove("hidden");setMsg("afMsg","");$("factDialog").showModal();
+}
+async function saveAdventureFact(){
+  const payload={game_id:selectedGame.id,fact_text:$("aftext").value.trim(),is_active:$("afactive").checked};
+  if(!payload.fact_text){setMsg("afMsg","Adventure Fact text is required.","bad");return}
+  try{
+    const id=$("afid").value;
+    if(id) await api(`/rest/v1/adventure_facts?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(payload),headers:{Prefer:"return=minimal"}});
+    else await api("/rest/v1/adventure_facts",{method:"POST",body:JSON.stringify(payload),headers:{Prefer:"return=minimal"}});
+    $("factDialog").close();await loadQuestions();setMsg("adminMsg","Adventure Fact saved.","ok");
+  }catch(e){setMsg("afMsg",e.message,"bad")}
+}
+window.toggleAdventureFact=async id=>{
+  const f=adventureFacts.find(x=>x.id===id);if(!f)return;
+  try{await api(`/rest/v1/adventure_facts?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({is_active:!f.is_active}),headers:{Prefer:"return=minimal"}});await loadQuestions()}
+  catch(e){setMsg("adminMsg",e.message,"bad")}
+}
+async function deleteAdventureFact(){
+  const id=$("afid").value;if(!id||!confirm("Permanently delete this Adventure Fact?"))return;
+  try{await api(`/rest/v1/adventure_facts?id=eq.${id}`,{method:"DELETE",headers:{Prefer:"return=minimal"}});$("factDialog").close();await loadQuestions();setMsg("adminMsg","Adventure Fact deleted.","ok")}
+  catch(e){setMsg("afMsg",e.message,"bad")}
 }
 function openNewQuestion(){
   $("qTitle").textContent="Add Question";$("qid").value="";
@@ -292,7 +343,7 @@ $("loginBtn").onclick=login;$("password").onkeydown=e=>{if(e.key==="Enter")login
 $("logoutBtn").onclick=()=>{sessionStorage.removeItem("triviaAdminToken");location.reload()};
 $("gameSelect").onchange=async()=>{selectedGame=games.find(g=>String(g.id)===$("gameSelect").value);await loadQuestions()};
 ["search","diffFilter","statusFilter"].forEach(id=>$(id).addEventListener("input",render));
-$("newQBtn").onclick=openNewQuestion;$("cancelQBtn").onclick=()=>$("questionDialog").close();$("saveQBtn").onclick=saveQuestion;$("deleteQBtn").onclick=deleteQuestion;
+$("newQBtn").onclick=openNewQuestion;$("cancelQBtn").onclick=()=>$("questionDialog").close();$("saveQBtn").onclick=saveQuestion;$("deleteQBtn").onclick=deleteQuestion;$("newFactBtn").onclick=openNewAdventureFact;$("cancelAFBtn").onclick=()=>$("factDialog").close();$("saveAFBtn").onclick=saveAdventureFact;$("deleteAFBtn").onclick=deleteAdventureFact;
 $("uploadHeroBtn").onclick=uploadHeroPhoto;
 $("newGameBtn").onclick=()=>openGame();$("editGameBtn").onclick=()=>selectedGame&&openGame(selectedGame);$("deleteGameBtn").onclick=deleteGame;$("cancelGBtn").onclick=()=>$("gameDialog").close();$("saveGBtn").onclick=saveGame;
 $("gname").addEventListener("input",()=>{if(!$("gid").value)$("gslug").value=slugify($("gname").value)});
@@ -307,6 +358,6 @@ $("ghero").addEventListener("change",()=>{
 
 if(token)boot();
 </script>
-<div style="text-align:center;opacity:.55;font-size:11px;padding:8px">SDC Queue Line Quest Admin • V4</div>
+<div style="text-align:center;opacity:.55;font-size:11px;padding:8px">SDC Queue Line Quest Admin • V5</div>
 </body>
 </html>
