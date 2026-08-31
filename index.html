@@ -69,11 +69,11 @@ header.mast{display:none!important}
 <section id="results" class="card results hidden"><h2 id="rank"></h2><div id="final" class="score"></div><p id="copy"></p><div id="breakdown" class="breakdown"></div>
 <div id="playerRank" class="player-rank hidden"></div>
 <div class="leaderboard">
-  <h3>🏆 Quest Leaderboard</h3>
+  <h3>🏆 Today’s Quest Leaderboard</h3>
   <div id="lbStatus" class="lb-status">Loading leaderboard…</div>
   <div id="lbRows"></div>
 </div>
-<button id="again" class="btn primary">PLAY AGAIN</button><button id="newname" class="btn secondary">CHANGE NAME</button></section><div class="footer">SDC Queue Line Quest • V22</div></main></div></div>
+<button id="again" class="btn primary">PLAY AGAIN</button><button id="newname" class="btn secondary">CHANGE NAME</button></section><div class="footer">SDC Queue Line Quest • V23</div></main></div></div>
 <script>
 let bank=[];
 const SUPABASE_URL="https://jrvegxhfwnytphdnkobp.supabase.co";
@@ -119,7 +119,7 @@ async function loadQuestions(){
   const subtitleEl=document.getElementById("gameSubtitle");
   if(subtitleEl) subtitleEl.textContent=game.subtitle||"Test your knowledge while you wait.";
   const footer=document.querySelector(".footer");
-  if(footer) footer.textContent=`SDC Queue Line Quest • ${game.name||"Trivia"} • V22`;
+  if(footer) footer.textContent=`SDC Queue Line Quest • ${game.name||"Trivia"} • V23`;
   const qResp=await fetch(`${SUPABASE_URL}/rest/v1/questions?game_id=eq.${gameId}&is_active=eq.true&select=id,question_text,choice_a,choice_b,choice_c,choice_d,correct_choice,fun_fact,category,difficulty&limit=1000`,{
     headers:{apikey:SUPABASE_KEY}
   });
@@ -215,6 +215,11 @@ function makeRiverName(){
   const num=Math.floor(Math.random()*90)+10;
   return `${a}${b}${num}`.slice(0,18);
 }
+function parkDateKey(value=new Date()){
+  const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Chicago",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(value);
+  const get=t=>parts.find(p=>p.type===t)?.value||"";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
 async function finish(){
   $("quiz").classList.add("hidden");$("results").classList.remove("hidden");
   let r=score===10?"Park Legend 🏆":score>=8?"Park Expert 🌊":score>=6?"Seasoned Explorer 🧭":score>=4?"River Scout 🛶":"New Explorer 🗺️";
@@ -222,7 +227,7 @@ async function finish(){
   $("copy").textContent=`${player}, your ${currentGameName} challenge is complete!`;
   $("breakdown").innerHTML=Object.entries(cats).map(([k,v])=>`<div>${k}<br><b>${v[0]}/${v[1]}</b></div>`).join("");
   const seconds=Math.max(1,Math.round((Date.now()-startedAt)/1000));
-  $("lbStatus").textContent="Updating the River Leaderboard…";$("lbRows").innerHTML="";$("playerRank").classList.add("hidden");
+  $("lbStatus").textContent="Updating today’s leaderboard…";$("lbRows").innerHTML="";$("playerRank").classList.add("hidden");
 
   const cleanName=cleanNickname(player)||"Mystery Rider";
   const gameToken=`${currentGameId}|${cleanName}|${score}|${seconds}|${startedAt}`;
@@ -238,32 +243,49 @@ async function finish(){
       if(!res.ok) throw new Error("submit");
       sessionStorage.setItem("mysticLastSubmitted",gameToken);
     }
-    await loadLeaderboard(cleanName,score,seconds);
+    await loadLeaderboard(cleanName);
   }catch(e){
-    $("lbStatus").textContent="The River Leaderboard couldn't load right now. Your score is still saved above.";
+    $("lbStatus").textContent="Today’s leaderboard couldn't load right now. Your round score is still saved above.";
   }
 }
-async function loadLeaderboard(myName,myScore,myTime){
-  const res=await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?game_id=eq.${currentGameId}&select=id,nickname,score,time_seconds,created_at,game_id&order=score.desc,time_seconds.asc,created_at.asc&limit=100`,{
+async function loadLeaderboard(myName){
+  // Fetch a 36-hour window, then apply the park's America/Chicago calendar date in the browser.
+  // This keeps the visible leaderboard on the Silver Dollar City day even across DST changes.
+  const since=new Date(Date.now()-36*60*60*1000).toISOString();
+  const res=await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?game_id=eq.${currentGameId}&created_at=gte.${encodeURIComponent(since)}&select=id,nickname,score,time_seconds,created_at,game_id&order=created_at.asc&limit=1000`,{
     headers:{"apikey":SUPABASE_KEY}
   });
   if(!res.ok) throw new Error("read");
-  const rows=await res.json();
+  const raw=await res.json();
+  const today=parkDateKey();
+  const rows=raw.filter(x=>parkDateKey(new Date(x.created_at))===today);
+
+  const totals=new Map();
+  for(const x of rows){
+    const display=cleanNickname(x.nickname)||"Mystery Rider";
+    const key=display.toLowerCase();
+    if(!totals.has(key)) totals.set(key,{nickname:display,points:0,quests:0,time:0,first:x.created_at});
+    const t=totals.get(key);
+    t.points+=Number(x.score)||0;
+    t.quests+=1;
+    t.time+=Number(x.time_seconds)||0;
+  }
+  const leaders=[...totals.values()].sort((a,b)=>b.points-a.points||a.time-b.time||String(a.first).localeCompare(String(b.first)));
   $("lbStatus").textContent="";
-  const myIndex=rows.findIndex(x=>x.nickname===myName&&x.score===myScore&&x.time_seconds===myTime);
+  const myKey=(cleanNickname(myName)||"Mystery Rider").toLowerCase();
+  const myIndex=leaders.findIndex(x=>x.nickname.toLowerCase()===myKey);
   if(myIndex>=0){
-    $("playerRank").textContent=`Your current rank: #${myIndex+1} of ${rows.length}`;
+    const me=leaders[myIndex];
+    $("playerRank").textContent=`Your daily total: ${me.points} points • ${me.quests} ${me.quests===1?"Quest":"Quests"} • Rank #${myIndex+1} of ${leaders.length}`;
     $("playerRank").classList.remove("hidden");
   }
-  const top=rows.slice(0,10);
+  const top=leaders.slice(0,10);
   $("lbRows").innerHTML=top.map((x,n)=>{
-    const isYou=n===myIndex;
-    const safe=String(x.nickname||"Mystery Rider").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-    const mins=Math.floor((x.time_seconds||0)/60), secs=(x.time_seconds||0)%60;
-    const time=x.time_seconds ? (mins?`${mins}:${String(secs).padStart(2,"0")}`:`${secs}s`) : "—";
-    return `<div class="lb-row ${isYou?"lb-you":""}"><span class="lb-rank">#${n+1}</span><span class="lb-name">${safe}${isYou?" • YOU":""}</span><span class="lb-score">${x.score}/10</span><span class="lb-time">${time}</span></div>`;
+    const isYou=x.nickname.toLowerCase()===myKey;
+    const safe=String(x.nickname).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+    return `<div class="lb-row ${isYou?"lb-you":""}"><span class="lb-rank">#${n+1}</span><span class="lb-name">${safe}${isYou?" • YOU":""}<small style="display:block;color:#b9d4d7;font-size:.68rem">${x.quests} ${x.quests===1?"Quest":"Quests"}</small></span><span class="lb-score">${x.points} pts</span><span class="lb-time">${Math.floor(x.time/60)}:${String(x.time%60).padStart(2,"0")}</span></div>`;
   }).join("");
-  if(!top.length)$("lbStatus").textContent="Be the first explorer on the leaderboard!";
+  if(!top.length) $("lbStatus").textContent="Be the first explorer on today’s leaderboard!";
 }
 $("randomNameBtn").onclick=()=>{
   $("name").value=makeRiverName();
